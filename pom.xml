@@ -75,6 +75,12 @@
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- F4: 근무 이력 PDF (LGPL 2.1 / MPL 2.0). 한글은 resources/fonts/NanumGothic.ttf (OFL)를 넣어서 쓴다 -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>2.0.3</version>
+        </dependency>
         <!-- F3: 페이슬립 PDF를 브라우저에서만 읽는다 (서버는 파일을 받지 않음). /webjars/pdfjs-dist/... 로 제공 -->
         <dependency>
             <groupId>org.webjars.npm</groupId>

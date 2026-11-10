@@ -23,6 +23,8 @@ public class SecurityConfig {
                                                    ObjectProvider<DemoAuthFilter> demoAuth) throws Exception {
         http.authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/login", "/error", "/check").permitAll()
+                        // PWA 정적 파일 (아이콘, 설정, 서비스 워커, 연결 없음 화면)
+                        .requestMatchers("/manifest.webmanifest", "/sw.js", "/offline.html", "/icons/**").permitAll()
                         .anyRequest().authenticated())
                 .oauth2Login(oauth -> oauth
                         .loginPage("/login")

@@ -1,0 +1,16 @@
+{
+  "name": "워홀 88 - 세컨 비자 근무 카운터",
+  "short_name": "워홀 88",
+  "description": "호주 워킹홀리데이 세컨·서드 비자 인정 근무를 기록하고 남은 일수를 확인해요.",
+  "lang": "ko",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F2F4F6",
+  "theme_color": "#2F6FEB",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -59,6 +59,14 @@ class AuthIntegrationTest {
     }
 
     @Test
+    void pwaFiles_arePublic_andLinkedFromHome() throws Exception {
+        mvc.perform(get("/manifest.webmanifest")).andExpect(status().isOk());
+        mvc.perform(get("/sw.js")).andExpect(status().isOk());
+        mvc.perform(get("/offline.html")).andExpect(status().isOk());
+        mvc.perform(get("/")).andExpect(content().string(containsString("rel=\"manifest\"")));
+    }
+
+    @Test
     void protectedPage_redirectsAnonymousToLogin() throws Exception {
         mvc.perform(get("/account"))
                 .andExpect(status().is3xxRedirection())

@@ -149,16 +149,33 @@ public class LedgerService {
     /** 화면용 묶음: 기록 목록, 기록별 근무일 행, 차수별 누적 결과 (2차, 3차). */
     @Transactional(readOnly = true)
     public Dashboard dashboard(AppUser owner) {
-        List<WorkRecord> all = records.findAllByOwnerOrderByIdDesc(owner);
+        return dashboard(owner, null, LocalDate.MIN, LocalDate.MAX);
+    }
+
+    /**
+     * 기간과 일터를 골라 계산한다 (F4 내보내기). recordIds가 null이면 전체 일터.
+     * 정규 근무 기간과 일한 날 기록 기간은 [from, to]로 잘라서 계산한다.
+     */
+    @Transactional(readOnly = true)
+    public Dashboard dashboard(AppUser owner, java.util.Set<Long> recordIds, LocalDate from, LocalDate to) {
+        java.util.function.Predicate<WorkRecord> picked = r -> recordIds == null || recordIds.contains(r.getId());
+        List<WorkRecord> all = records.findAllByOwnerOrderByIdDesc(owner).stream().filter(picked).toList();
         Map<Long, List<WorkDay>> daysByRecord = days.findByRecordOwner(owner).stream()
+                .filter(d -> picked.test(d.getRecord()))
+                .filter(d -> !d.getWorkDate().isBefore(from) && !d.getWorkDate().isAfter(to))
                 .collect(Collectors.groupingBy(d -> d.getRecord().getId()));
 
-        List<EmploymentPeriod> employment = records.findByOwnerAndMode(owner, WorkMode.EMPLOYMENT_PERIOD).stream()
-                .map(r -> new EmploymentPeriod(r.getId(), r.getVisaYear(), r.getStartDate(), r.getEndDate(),
-                        r.getUnpaidWeatherDays(), countable(r)))
+        List<EmploymentPeriod> employment = all.stream()
+                .filter(r -> r.getMode() == WorkMode.EMPLOYMENT_PERIOD)
+                .filter(r -> !r.getEndDate().isBefore(from) && !r.getStartDate().isAfter(to))
+                .map(r -> new EmploymentPeriod(r.getId(), r.getVisaYear(), max(r.getStartDate(), from),
+                        min(r.getEndDate(), to), r.getUnpaidWeatherDays(), countable(r)))
                 .toList();
-        List<CasualRecord> casual = records.findByOwnerAndMode(owner, WorkMode.CASUAL_DAYS).stream()
-                .map(r -> new CasualRecord(r.getId(), r.getVisaYear(), r.getStartDate(), r.getEndDate(),
+        List<CasualRecord> casual = all.stream()
+                .filter(r -> r.getMode() == WorkMode.CASUAL_DAYS)
+                .filter(r -> !r.getEndDate().isBefore(from) && !r.getStartDate().isAfter(to))
+                .map(r -> new CasualRecord(r.getId(), r.getVisaYear(), max(r.getStartDate(), from),
+                        min(r.getEndDate(), to),
                         countable(r), r.getDisasterWorkType() == DisasterWorkType.VOLUNTEER,
                         daysByRecord.getOrDefault(r.getId(), List.of()).stream()
                                 .map(d -> new WorkDayRow(d.getWorkDate(), d.getStandardDays(), isFull(r, d)))

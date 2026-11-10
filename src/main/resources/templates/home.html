@@ -73,7 +73,7 @@
     </section>
 
     <section class="card">
-        <div class="row"><h2 style="margin:0">일한 곳</h2><a href="/ledger" style="font-size:14px">전체 기록</a></div>
+        <div class="row"><h2 style="margin:0">일한 곳</h2><span style="display:flex; gap:12px"><a href="/export" style="font-size:14px">PDF</a><a href="/ledger" style="font-size:14px">전체 기록</a></span></div>
         <p class="muted" th:if="${places.isEmpty()}">아직 일터가 없어요.</p>
         <div class="place" th:each="p : ${places}">
             <div><div style="font-size:15px; font-weight:500" th:text="${p.name()}"></div>

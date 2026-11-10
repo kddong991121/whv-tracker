@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/ui :: head('워홀 88 - 근무 이력 PDF')}"></head>
+<body>
+<div class="app">
+    <header class="top"><div><div class="sub">비자 신청 때 참고할 영문 요약</div><h1>근무 이력 PDF</h1></div></header>
+    <div class="flash err" th:if="${error == 'records'}">일터를 하나 이상 고르세요.</div>
+    <div class="flash err" th:if="${error == 'input'}">이름(영문)과 기간을 확인해 주세요.</div>
+
+    <form class="card" method="get" action="/export/pdf">
+        <label class="f" for="applicantName">이름 (여권과 같은 영문, 저장하지 않아요)</label>
+        <input id="applicantName" name="applicantName" required pattern="[A-Za-z][A-Za-z .'\-]{0,99}" placeholder="KIM MINSU">
+        <div class="grid2">
+            <div><label class="f" for="from">시작</label><input type="date" id="from" name="from" th:value="${from}" required></div>
+            <div><label class="f" for="to">끝</label><input type="date" id="to" name="to" th:value="${to}" required></div>
+        </div>
+        <label class="f">넣을 일터</label>
+        <p class="muted" th:if="${records.isEmpty()}">아직 일터가 없어요.</p>
+        <label style="display:flex; gap:10px; align-items:center; min-height:36px; font-size:14px" th:each="r : ${records}">
+            <input type="checkbox" name="recordIds" th:value="${r.id}" checked style="width:20px; height:20px">
+            <span th:text="${r.employerName} + ' (' + ${r.visaYear == 2 ? '세컨' : '서드'} + ')'"></span>
+        </label>
+        <button class="btn" type="submit" style="width:100%; margin-top:14px">PDF 받기</button>
+        <p class="muted">인정 일수, 일터별 기간, 인정 지역 확인 결과, 페이슬립 체크리스트 점수가 들어가요. 페이슬립 원본은 들어가지 않아요.
+            기록이 없으면 "기록 부족" 표시가 찍혀요.</p>
+    </form>
+    <p class="muted" style="margin:16px 4px" th:text="${disclaimer}"></p>
+</div>
+<nav th:replace="~{fragments/ui :: nav('')}"></nav>
+</body>
+</html>
