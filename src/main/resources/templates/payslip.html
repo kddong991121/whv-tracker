@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/ui :: head('워홀 88 - 페이슬립')}"></head>
+<body>
+<style>
+    .kv { display:flex; justify-content:space-between; gap:8px; align-items:center; }
+    .days { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:8px; }
+    .days label { display:flex; flex-direction:column; align-items:center; justify-content:center; height:60px; border-radius:12px;
+        border:1px solid #D1D6DB; font-size:12px; color:#4E5968; cursor:pointer; position:relative; overflow:hidden; }
+    .days label b { font-size:15px; }
+    .days input { position:absolute; opacity:0; }
+    .days label.on { background:#2F6FEB; border-color:#2F6FEB; color:#fff; }
+    .chk { display:flex; gap:10px; align-items:flex-start; font-size:14px; min-height:36px; margin:6px 0; }
+    .chk input { width:20px; height:20px; flex-shrink:0; margin-top:1px; }
+    .file { display:flex; align-items:center; gap:12px; }
+</style>
+<div class="app">
+    <header class="top"><div><div class="sub">파일은 이 기기에서만 읽어요</div><h1>페이슬립</h1></div></header>
+    <div class="flash ok" th:if="${message}" th:text="${message}"></div>
+    <div class="flash err" th:if="${error}" th:text="${error}"></div>
+
+    <section class="card" th:if="${places.isEmpty()}">
+        <p style="margin:0">먼저 <a href="/work">근무 기록</a>에서 일터를 추가하세요.</p>
+    </section>
+
+    <th:block th:if="${!places.isEmpty()}">
+    <section class="card">
+        <h2>1. PDF 고르기</h2>
+        <!-- name 속성이 없고 폼 밖에 있어서 파일은 서버로 가지 않는다 -->
+        <input type="file" id="pdf" accept="application/pdf" aria-label="페이슬립 PDF">
+        <p class="muted" id="readStatus">PDF를 고르면 고용주, 급여 기간, 총 근무 시간을 자동으로 채워요. 사진(JPG·PNG)은 아래에 직접 입력하세요.</p>
+    </section>
+
+    <form method="post" th:action="@{/payslip}" id="form">
+        <section class="card">
+            <h2>2. 읽은 내용 확인</h2>
+            <label class="f" for="recordId">어느 일터 근무인가요?</label>
+            <select id="recordId" name="recordId">
+                <option th:each="p : ${places}" th:value="${p.id}" th:text="${p.employerName}" th:data-name="${p.employerName}"></option>
+            </select>
+            <label class="f" for="employerName">고용주 (페이슬립에 적힌 이름)</label>
+            <input id="employerName" name="employerName" required maxlength="100">
+            <label class="f" for="abn">ABN (선택)</label>
+            <input id="abn" name="abn" inputmode="numeric" placeholder="51 824 753 556">
+            <div class="grid2">
+                <div><label class="f" for="periodStart">급여 기간 시작</label><input type="date" id="periodStart" name="periodStart" required></div>
+                <div><label class="f" for="periodEnd">급여 기간 끝</label><input type="date" id="periodEnd" name="periodEnd" required></div>
+            </div>
+            <div class="grid2">
+                <div><label class="f" for="totalHours">총 근무 시간</label><input type="number" id="totalHours" name="totalHours" step="0.01" min="0.01" required></div>
+                <div><label class="f" for="employmentType">고용 형태 (참고용)</label><input id="employmentType" name="employmentType" maxlength="30"></div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>3. 이 기간에 일한 날을 골라주세요</h2>
+            <p class="muted" style="margin:0">페이슬립엔 합계만 있어서 날짜는 직접 확인해요. 총 시간을 고른 날 수로 똑같이 나눠 넣어요.</p>
+            <div class="days" id="days"></div>
+            <p class="label" id="perDay" style="margin:10px 0 0"></p>
+        </section>
+
+        <section class="card">
+            <h2>증빙 체크리스트 (선택)</h2>
+            <label class="chk" th:each="c, st : ${checklist}"><input type="checkbox" name="checklist" th:value="${st.index}"><span th:text="${c}"></span></label>
+            <label class="chk"><input type="checkbox" name="cashPaid" value="true"><span>현금으로 받았어요 (인정 위험이 높을 수 있어요)</span></label>
+        </section>
+
+        <section class="card">
+            <label class="chk"><input type="checkbox" name="consent" value="true" required>
+                <span>날짜·시간·일터만 읽어서 저장하는 데 동의해요 (TFN·계좌번호는 읽지 않아요)</span></label>
+            <p class="muted">계산에 필요한 내용(날짜·시간·일터)만 저장해요. 원본 파일은 서버로 보내지 않아요.</p>
+            <button class="btn" type="submit" style="width:100%">기록 저장</button>
+        </section>
+    </form>
+    </th:block>
+
+    <section class="card" th:if="${!payslips.isEmpty()}">
+        <h2>저장한 페이슬립</h2>
+        <div class="kv" style="padding:10px 0; border-bottom:1px solid #F2F4F6" th:each="p : ${payslips}">
+            <div><div style="font-size:15px; font-weight:500" th:text="${p.employerName}"></div>
+                <div class="label" th:text="${p.periodStart} + ' – ' + ${p.periodEnd} + ' · ' + ${p.totalHours} + '시간 · ' + ${p.workedDays} + '일'"></div>
+                <div class="label" style="color:#92400E" th:if="${p.cashPaid}">현금 지급 · 인정 위험이 높을 수 있어요</div></div>
+            <span class="badge" th:classappend="${p.score() == 7} ? 'sure' : 'short'" th:text="'증빙 ' + ${p.score()} + ' / 7'"></span>
+        </div>
+    </section>
+
+    <p class="muted" style="margin:16px 4px" th:text="${disclaimer}"></p>
+</div>
+<nav th:replace="~{fragments/ui :: nav('payslip')}"></nav>
+
+<script type="module">
+    import * as pdfjs from '/webjars/pdfjs-dist/5.7.284/build/pdf.min.mjs';
+    pdfjs.GlobalWorkerOptions.workerSrc = '/webjars/pdfjs-dist/5.7.284/build/pdf.worker.min.mjs';
+
+    const $ = id => document.getElementById(id);
+    const status = $('readStatus');
+
+    // dd/mm/yyyy (호주 표기) → yyyy-mm-dd
+    function toIso(s) {
+        const m = s.match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/);
+        if (!m) return '';
+        const y = m[3].length === 2 ? '20' + m[3] : m[3];
+        return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+    }
+
+    function parse(text) {
+        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+        const out = {};
+        const abn = text.match(/ABN[:\s#]*((?:\d\s?){11})/i);
+        if (abn) {
+            out.abn = abn[1].replace(/\s/g, '');
+            const i = lines.findIndex(l => /ABN/i.test(l));
+            const before = i > 0 ? lines[i - 1] : '';
+            const sameLine = i >= 0 ? lines[i].replace(/ABN.*$/i, '').trim() : '';
+            out.employer = sameLine || before;
+        }
+        if (!out.employer) out.employer = lines[0] || '';
+        const d = '\\d{1,2}[\\/.\\-]\\d{1,2}[\\/.\\-]\\d{2,4}';
+        const period = text.match(new RegExp(`(${d})\\s*(?:-|–|to)\\s*(${d})`, 'i'));
+        if (period) { out.start = toIso(period[1]); out.end = toIso(period[2]); }
+        const hours = text.match(/(?:total\s*hours|hours\s*worked|ordinary\s*hours?|hours)[^\d\n]{0,20}(\d+(?:\.\d+)?)/i);
+        if (hours) out.hours = hours[1];
+        const type = text.match(/\b(casual|full[\s-]?time|part[\s-]?time)\b/i);
+        if (type) out.type = type[1];
+        return out;
+    }
+
+    $('pdf')?.addEventListener('change', async e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        status.textContent = '읽는 중…';
+        try {
+            const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+            let text = '';
+            for (let p = 1; p <= Math.min(doc.numPages, 3); p++) {
+                const content = await (await doc.getPage(p)).getTextContent();
+                for (const item of content.items) text += item.str + (item.hasEOL ? '\n' : ' ');
+                text += '\n';
+            }
+            if (!text.trim()) { status.textContent = '글자를 읽지 못했어요 (사진으로 된 PDF일 수 있어요). 아래에 직접 입력해 주세요.'; return; }
+            const v = parse(text);
+            if (v.employer) $('employerName').value = v.employer.slice(0, 100);
+            if (v.abn) $('abn').value = v.abn;
+            if (v.start) $('periodStart').value = v.start;
+            if (v.end) $('periodEnd').value = v.end;
+            if (v.hours) $('totalHours').value = v.hours;
+            if (v.type) $('employmentType').value = v.type;
+            const norm = t => (t || '').toLowerCase().replace(/\(.*?\)|pty|ltd|[^a-z0-9가-힣]/g, '');
+            const match = [...$('recordId').options].find(o => v.employer && norm(o.dataset.name)
+                && (norm(v.employer).includes(norm(o.dataset.name)) || norm(o.dataset.name).includes(norm(v.employer))));
+            if (match) $('recordId').value = match.value;
+            renderDays();
+            status.textContent = '읽기 완료 · 파일은 이 기기에서만 읽었어요. 값이 맞는지 확인해 주세요.';
+        } catch (err) {
+            status.textContent = 'PDF를 읽지 못했어요. 아래에 직접 입력해 주세요.';
+        }
+    });
+
+    const dow = ['일', '월', '화', '수', '목', '금', '토'];
+    function renderDays() {
+        const box = $('days');
+        box.innerHTML = '';
+        const s = $('periodStart').value, e = $('periodEnd').value;
+        if (!s || !e) return;
+        const start = new Date(s + 'T00:00:00'), end = new Date(e + 'T00:00:00');
+        if (end < start || (end - start) / 86400000 > 31) { box.textContent = '급여 기간을 확인해 주세요 (최대 31일).'; return; }
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const weekday = d.getDay() >= 1 && d.getDay() <= 5;
+            const label = document.createElement('label');
+            label.className = weekday ? 'on' : '';
+            label.innerHTML = `<input type="checkbox" name="dates" value="${iso}" ${weekday ? 'checked' : ''}><span>${dow[d.getDay()]}</span><b>${d.getDate()}</b>`;
+            label.querySelector('input').addEventListener('change', ev => { label.className = ev.target.checked ? 'on' : ''; perDay(); });
+            box.appendChild(label);
+        }
+        perDay();
+    }
+    function perDay() {
+        const n = document.querySelectorAll('input[name=dates]:checked').length;
+        const h = parseFloat($('totalHours').value);
+        $('perDay').textContent = n && h ? `${n}일 일함 · 하루 평균 ${(h / n).toFixed(2)}시간으로 넣어요` : '';
+    }
+    ['periodStart', 'periodEnd'].forEach(id => $(id)?.addEventListener('change', renderDays));
+    $('totalHours')?.addEventListener('input', perDay);
+</script>
+</body>
+</html>

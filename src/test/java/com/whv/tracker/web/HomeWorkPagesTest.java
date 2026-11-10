@@ -88,4 +88,15 @@ class HomeWorkPagesTest {
         mvc.perform(post("/work/shift/" + id + "/delete").param("week", day.toString()))
                 .andExpect(flash().attributeExists("message"));
     }
+
+    @Test
+    void payslipPage_rendersWithoutFileUploadField() throws Exception {
+        ledger.addCasual(owner, "페이슬립 농장", "4670", Industry.REGIONAL_PRIMARY_MINING_CONSTRUCTION, 2,
+                LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30), 5, null, null, null, new BigDecimal("8"), null, false);
+
+        mvc.perform(get("/payslip"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("원본 파일은 서버로 보내지 않아요")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("multipart"))));
+    }
 }

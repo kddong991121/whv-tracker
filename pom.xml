@@ -75,6 +75,12 @@
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- F3: 페이슬립 PDF를 브라우저에서만 읽는다 (서버는 파일을 받지 않음). /webjars/pdfjs-dist/... 로 제공 -->
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>pdfjs-dist</artifactId>
+            <version>5.7.284</version>
+        </dependency>
     </dependencies>
 
     <build>

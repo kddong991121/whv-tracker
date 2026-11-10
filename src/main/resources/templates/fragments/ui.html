@@ -19,6 +19,7 @@
         .card { background:#fff; border-radius:20px; padding:20px; margin-top:12px; }
         .card h2 { margin:0 0 12px; font-size:17px; font-weight:700; }
         .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .grid2 > * { min-width:0; }
         .grid2 .card { padding:18px 16px; display:flex; flex-direction:column; gap:6px; }
         .label { font-size:13px; color:#4E5968; }
         .muted { font-size:12px; color:#4E5968; line-height:1.6; }
@@ -45,7 +46,7 @@
     <a href="/" th:classappend="${active == 'home'} ? 'on'"><span class="i">⌂</span>홈</a>
     <a href="/work" th:classappend="${active == 'work'} ? 'on'"><span class="i">▦</span>근무 기록</a>
     <a href="/check" th:classappend="${active == 'check'} ? 'on'"><span class="i">⌖</span>인정 지역</a>
-    <a href="/ledger" th:classappend="${active == 'ledger'} ? 'on'"><span class="i">≡</span>상세</a>
+    <a href="/payslip" th:classappend="${active == 'payslip'} ? 'on'"><span class="i">▤</span>페이슬립</a>
 </nav>
 </body>
 </html>
