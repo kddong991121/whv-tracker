@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>세컨 인정 지역 확인</title>
+    <style>
+        :root { --ink:#191F28; --muted:#4E5968; --line:#E5E8EB; --bg:#F2F4F6; --card:#fff; --accent:#2F6FEB; }
+        body { margin:0; padding:16px; background:var(--bg); color:var(--ink); font-family:"Noto Sans KR","Malgun Gothic",sans-serif; line-height:1.5; }
+        section { background:var(--card); border-radius:16px; padding:18px; margin-bottom:12px; }
+        h1 { font-size:20px; margin:0 0 12px; }
+        label { display:block; margin:10px 0 4px; font-size:14px; color:var(--muted); }
+        input, select { width:100%; box-sizing:border-box; height:44px; border:1px solid #D1D6DB; border-radius:10px; padding:0 10px; font-size:15px; }
+        button { margin-top:14px; width:100%; height:48px; border:0; border-radius:12px; background:var(--accent); color:#fff; font-size:16px; font-weight:700; }
+        .big { font-size:20px; font-weight:800; }
+        .ok { color:#14663C; } .warn { color:#92400E; } .no { color:#B42318; }
+        .muted { font-size:12px; color:var(--muted); }
+    </style>
+</head>
+<body>
+<h1>세컨 인정 지역 확인</h1>
+<p class="muted"><a href="/">홈으로</a></p>
+
+<section>
+    <form method="get" action="/check">
+        <label for="postcode">일한 곳 포스트코드 (숫자 4자리)</label>
+        <input id="postcode" name="postcode" th:value="${postcode}" required pattern="[0-9]{4}" inputmode="numeric">
+        <label for="industry">업종</label>
+        <select id="industry" name="industry">
+            <option value="TOURISM_HOSPITALITY" th:selected="${industry != null and industry.name() == 'TOURISM_HOSPITALITY'}">관광·요식업</option>
+            <option value="REGIONAL_PRIMARY_MINING_CONSTRUCTION" th:selected="${industry == null or industry.name() == 'REGIONAL_PRIMARY_MINING_CONSTRUCTION'}">농장·축산·어업·임업·광업·건설</option>
+            <option value="BUSHFIRE_RECOVERY" th:selected="${industry != null and industry.name() == 'BUSHFIRE_RECOVERY'}">산불 복구</option>
+            <option value="NATURAL_DISASTER_RECOVERY" th:selected="${industry != null and industry.name() == 'NATURAL_DISASTER_RECOVERY'}">재해 복구 (홍수·사이클론 등)</option>
+            <option value="COVID_HEALTHCARE" th:selected="${industry != null and industry.name() == 'COVID_HEALTHCARE'}">코로나 의료</option>
+        </select>
+        <label for="workType">농장 일이면 작업 종류</label>
+        <select id="workType" name="workType">
+            <option value="">해당 없음</option>
+            <option th:each="w : ${workTypes}" th:value="${w.name()}" th:text="${w.label()}"></option>
+        </select>
+        <label for="disasterWorkType">재해 복구면 유급/봉사</label>
+        <select id="disasterWorkType" name="disasterWorkType">
+            <option value="">해당 없음</option>
+            <option value="PAID">유급</option>
+            <option value="VOLUNTEER">봉사</option>
+        </select>
+        <label for="lodgeDate">비자 신청 예정일 (비우면 오늘)</label>
+        <input id="lodgeDate" type="date" name="lodgeDate">
+        <button type="submit">확인하기</button>
+    </form>
+</section>
+
+<section th:if="${error}"><p class="no" th:text="${error}"></p></section>
+
+<section th:if="${result}">
+    <p class="big" th:classappend="${result.status().name() == 'ELIGIBLE'} ? 'ok' : (${result.status().name() == 'CONDITIONAL'} ? 'warn' : 'no')"
+       th:text="${result.status().message()}"></p>
+    <p th:if="${result.multipleStates()}" class="warn">
+        이 포스트코드는 여러 주에 걸쳐 있어요 (<span th:text="${#strings.setJoin(result.states(), ', ')}"></span>). 주에 따라 결과가 다를 수 있어요.
+    </p>
+    <p th:if="${result.status().name() == 'NOT_LISTED'}" class="muted">
+        목록에 없는 곳은 여기서 판단할 수 없어요. 행정·청소 업무는 그 산업을 직접 지원하면 인정될 수 있다고 원문에 적혀 있어요.
+    </p>
+    <div th:if="${!result.conditions().isEmpty()}">
+        <p class="muted">원문 표 조건 (근무 날짜도 확인하세요):</p>
+        <ul><li class="muted" th:each="c : ${result.conditions()}" th:text="${c}"></li></ul>
+    </div>
+    <p class="muted">근거: 호주 내무부 specified work 페이지 표 1~6, 조사일 2026-11-10.
+        <a th:href="${sourceUrl}">원문 보기</a></p>
+</section>
+
+<p class="muted" th:text="${disclaimer}"></p>
+</body>
+</html>

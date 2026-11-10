@@ -52,6 +52,13 @@ class AuthIntegrationTest {
     }
 
     @Test
+    void checkPage_isPublic_andShowsResult() throws Exception {
+        mvc.perform(get("/check").param("postcode", "4870").param("industry", "REGIONAL_PRIMARY_MINING_CONSTRUCTION"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("세컨 인정 지역이에요")));
+    }
+
+    @Test
     void protectedPage_redirectsAnonymousToLogin() throws Exception {
         mvc.perform(get("/account"))
                 .andExpect(status().is3xxRedirection())
