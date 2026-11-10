@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/ui :: head('워홀 88 - 홈')}"></head>
+<body>
+<style>
+    .big { font-size:60px; font-weight:800; line-height:1; letter-spacing:-1px; color:#2F6FEB; }
+    .bar { height:14px; background:#E5E8EB; border-radius:7px; overflow:hidden; display:flex; margin-top:16px; }
+    .bar .sure { background:#2F6FEB; } .bar .short { background:repeating-linear-gradient(45deg,#F59E0B 0 3px,#FDE68A 3px 6px); }
+    .legend { display:flex; gap:16px; font-size:13px; color:#4E5968; margin:10px 0 14px; }
+    .legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px; }
+    .cal { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center; }
+    .cal .h { font-size:12px; color:#4E5968; }
+    .cal div.c { height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:14px; }
+    .cal .full { background:#2F6FEB; color:#fff; font-weight:700; } .cal .worked { background:#D9E6FD; color:#1E3A8A; font-weight:700; }
+    .cal .short { background:#FDE68A; color:#78350F; font-weight:700; } .cal .future { color:#6B7684; }
+    .cal .today { box-shadow:inset 0 0 0 2px #191F28; }
+    .place { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #F2F4F6; }
+</style>
+<div class="app">
+    <header class="top">
+        <div><div class="sub">세컨 비자 준비 중</div><h1>워홀 88</h1></div>
+        <a class="icon-btn" href="/account" aria-label="내 계정">⚙</a>
+    </header>
+    <form method="post" th:action="@{/logout}" hidden></form>
+
+    <section class="card">
+        <p style="margin:0 0 16px; font-size:18px; font-weight:700" th:if="${!s.targetMet()}">
+            세컨 비자까지 <span style="color:#2F6FEB" th:text="${s.remainingDays()} + '일'"></span> 남았어요</p>
+        <p style="margin:0 0 16px; font-size:18px; font-weight:700" th:if="${s.targetMet()}">세컨 비자 88일을 채웠어요</p>
+        <div><span class="big" th:text="${s.displayDays()} + '일'"></span>
+            <span style="font-size:22px; font-weight:700; color:#4E5968" th:text="'/ ' + ${s.target()} + '일'"></span></div>
+        <div class="bar" role="img" th:attr="aria-label='인정된 날 ' + ${surePct} + '퍼센트'">
+            <div class="sure" th:style="'width:' + ${surePct} + '%'"></div>
+            <div class="short" th:style="'width:' + ${shortPct} + '%'"></div>
+        </div>
+        <div class="legend"><span><i style="background:#2F6FEB"></i>인정된 날</span>
+            <span><i style="background:repeating-linear-gradient(45deg,#F59E0B 0 2px,#FDE68A 2px 4px)"></i>짧게 일한 날</span></div>
+        <a class="notice" href="/work" th:if="${s.shortDays() > 0}">
+            <b th:text="'짧게 일한 날이 ' + ${s.shortDays()} + '일 있어요.'"></b><br>인정 안 될 수도 있어서 위 숫자에 넣지 않았어요.</a>
+        <p class="label" style="margin:14px 0 0" th:if="${startedDays != null}"
+           th:text="${startedDays >= s.target()} ? '시작한 지 ' + ${startedDays} + '일 · 3개월(88일) 기간은 지났어요' : '시작한 지 ' + ${startedDays} + '일 · 3개월(88일)이 지나야 신청할 수 있어요'"></p>
+        <p class="label" style="margin:14px 0 0" th:if="${startedDays == null}">아직 기록이 없어요. 아래 "근무 추가"로 시작하세요.</p>
+    </section>
+
+    <div class="grid2" style="margin-top:12px">
+        <section class="card" style="margin:0">
+            <span class="label">비자 만료까지</span>
+            <th:block th:if="${expiry != null}">
+                <span style="font-size:28px; font-weight:800; color:#C2410C" th:text="${expiryDays >= 0} ? 'D-' + ${expiryDays} : '만료일 지남'"></span>
+                <span class="muted" th:text="${#temporals.format(expiry, 'yyyy년 M월 d일')}"></span>
+            </th:block>
+            <a th:if="${expiry == null}" href="/ledger" style="font-size:15px; font-weight:700">만료일 입력하기</a>
+        </section>
+        <section class="card" style="margin:0">
+            <span class="label">일주일에 필요한 날</span>
+            <th:block th:if="${pace != null and !pace.goalMet() and pace.weeklyNeeded() != null}">
+                <span style="font-size:28px; font-weight:800" th:text="'주 ' + ${pace.weeklyNeeded()} + '일'"></span>
+                <span class="muted" th:text="${pace.targetDate()} + '까지 끝내려면'"></span>
+            </th:block>
+            <span th:if="${pace != null and pace.goalMet()}" style="font-size:20px; font-weight:800">목표 달성</span>
+            <span th:if="${pace == null}" class="muted">만료일을 넣으면 계산해요</span>
+            <span th:if="${pace != null and !pace.goalMet() and pace.weeklyNeeded() == null}" class="muted">계산할 수 없어요 (목표일이 지났어요)</span>
+        </section>
+    </div>
+
+    <section class="card">
+        <h2 th:text="${month.year} + '년 ' + ${month.monthValue} + '월'"></h2>
+        <div class="legend" style="flex-wrap:wrap; margin-top:0">
+            <span><i style="background:#2F6FEB"></i>매일 출근</span><span><i style="background:#D9E6FD"></i>일한 날</span>
+            <span><i style="background:#FDE68A"></i>짧게 일한 날</span></div>
+        <div class="cal"><span class="h">일</span><span class="h">월</span><span class="h">화</span><span class="h">수</span><span class="h">목</span><span class="h">금</span><span class="h">토</span></div>
+        <div class="cal" style="margin-top:6px"><div class="c" th:each="c : ${cells}" th:classappend="${c.css()}" th:text="${c.label()}"></div></div>
+    </section>
+
+    <section class="card">
+        <div class="row"><h2 style="margin:0">일한 곳</h2><a href="/work" style="font-size:14px">근무 기록</a></div>
+        <p class="muted" th:if="${places.isEmpty()}">아직 일터가 없어요.</p>
+        <div class="place" th:each="p : ${places}">
+            <div><div style="font-size:15px; font-weight:500" th:text="${p.name()}"></div>
+                <div class="label" th:text="${p.detail()} + (${p.counted()} ? '' : ' · 합계 제외')"></div></div>
+            <span style="font-weight:700" th:text="${p.value()}"></span>
+        </div>
+    </section>
+
+    <p class="muted" style="margin:16px 4px" th:text="${disclaimer}"></p>
+</div>
+<a class="fab" href="/work">+ 근무 추가</a>
+<nav th:replace="~{fragments/ui :: nav('home')}"></nav>
+</body>
+</html>

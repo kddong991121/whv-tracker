@@ -177,6 +177,63 @@ public class LedgerService {
         return new Dashboard(all, daysByRecord, summaries, statusByRecord, countedByRecord);
     }
 
+    /** 달력 표시용 하루 종류. */
+    public enum DayKind { FULLTIME, WORKED, SHORT }
+
+    /**
+     * 달력 한 달치 하루 종류 (합계에 들어가는 일터만). 매일 출근 기간 > 일한 날(인정) > 짧게 일한 날 순으로 표시한다.
+     * 세컨 비자(2차) 기록만 본다.
+     */
+    @Transactional(readOnly = true)
+    public Map<LocalDate, DayKind> calendar(AppUser owner, java.time.YearMonth month) {
+        Map<LocalDate, DayKind> out = new java.util.HashMap<>();
+        LocalDate first = month.atDay(1);
+        LocalDate last = month.atEndOfMonth();
+        for (WorkRecord r : records.findByOwnerAndMode(owner, WorkMode.EMPLOYMENT_PERIOD)) {
+            if (r.getVisaYear() != 2 || !countable(r)) {
+                continue;
+            }
+            for (LocalDate d = max(r.getStartDate(), first); !d.isAfter(min(r.getEndDate(), last)); d = d.plusDays(1)) {
+                out.put(d, DayKind.FULLTIME);
+            }
+        }
+        for (WorkDay d : days.findByRecordOwner(owner)) {
+            WorkRecord r = d.getRecord();
+            LocalDate date = d.getWorkDate();
+            if (r.getVisaYear() != 2 || !countable(r) || date.isBefore(first) || date.isAfter(last)) {
+                continue;
+            }
+            DayKind now = out.get(date);
+            if (now == DayKind.FULLTIME || now == DayKind.WORKED) {
+                continue;
+            }
+            out.put(date, isFull(r, d) ? DayKind.WORKED : DayKind.SHORT);
+        }
+        return out;
+    }
+
+    /** 일한 날 근무 1행 삭제 (본인 기록만). */
+    @Transactional
+    public void deleteWorkDay(AppUser owner, long workDayId) {
+        WorkDay d = days.findById(workDayId)
+                .filter(x -> x.getRecord().getOwner().getId().equals(owner.getId()))
+                .orElseThrow(() -> new IllegalArgumentException("근무를 찾을 수 없습니다."));
+        days.delete(d);
+    }
+
+    /** 하루 판정 공개용 (화면에서 짧은 근무 표시). */
+    public boolean isFullShift(WorkDay d) {
+        return isFull(d.getRecord(), d);
+    }
+
+    private static LocalDate max(LocalDate a, LocalDate b) {
+        return a.isAfter(b) ? a : b;
+    }
+
+    private static LocalDate min(LocalDate a, LocalDate b) {
+        return a.isBefore(b) ? a : b;
+    }
+
     /**
      * 인정 지역·업무 판정 (F2). 인정이면 합계에 넣고, 조건부는 사용자가 충족을 체크했을 때만 넣는다 (PRD 4.2.8).
      * 확인 불가·불인정 업무·조건 미충족 기록은 합계에서 빼고 화면에 "인정 안 될 수 있는 근무"로 보여준다.

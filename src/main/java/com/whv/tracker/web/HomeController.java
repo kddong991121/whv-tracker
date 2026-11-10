@@ -1,30 +1,84 @@
 package com.whv.tracker.web;
 
+import com.whv.tracker.calc.PacePlan;
+import com.whv.tracker.calc.VisaSummary;
+import com.whv.tracker.calc.WorkCalculator;
+import com.whv.tracker.ledger.LedgerService;
+import com.whv.tracker.ledger.LedgerService.DayKind;
+import com.whv.tracker.ledger.WorkDay;
+import com.whv.tracker.ledger.WorkMode;
+import com.whv.tracker.ledger.WorkRecord;
 import com.whv.tracker.user.AppUser;
 import com.whv.tracker.user.AppUserService;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-/** 공개 화면 (홈, 로그인) 과 로그인 필요 화면 (계정). */
+/**
+ * 홈 (/): 로그아웃 상태는 소개 화면, 로그인 상태는 시안(docs/design/Main.dc.html) 기준 진행 화면.
+ * 로그인 (/login), 계정 (/account).
+ */
 @Controller
 public class HomeController {
 
     public static final String DISCLAIMER = "법률·이민 자문이 아니며, 최종 판단은 호주 내무부 공식 안내를 확인하세요.";
 
     private final AppUserService users;
+    private final LedgerService ledger;
 
-    public HomeController(AppUserService users) {
+    public HomeController(AppUserService users, LedgerService ledger) {
         this.users = users;
+        this.ledger = ledger;
     }
 
     @GetMapping("/")
     public String home(Authentication authentication, Model model) {
-        model.addAttribute("loggedIn", isLoggedIn(authentication));
         model.addAttribute("disclaimer", DISCLAIMER);
-        return "index";
+        AppUser owner = isLoggedIn(authentication) ? users.findByGoogleSubject(authentication.getName()) : null;
+        model.addAttribute("loggedIn", isLoggedIn(authentication));
+        if (owner == null) {
+            return "index";
+        }
+        LocalDate today = LocalDate.now();
+        LedgerService.Dashboard dashboard = ledger.dashboard(owner);
+        VisaSummary second = dashboard.summaries().get(0);
+        model.addAttribute("s", second);
+        model.addAttribute("today", today);
+
+        // 진행 막대: 인정 비율과 짧게 일한 날 비율 (짧은 날은 하루 1.4일로 가정해 표시만 한다)
+        BigDecimal target = BigDecimal.valueOf(second.target());
+        BigDecimal surePct = second.total().multiply(BigDecimal.valueOf(100)).divide(target, 1, RoundingMode.DOWN)
+                .min(BigDecimal.valueOf(100));
+        BigDecimal shortPct = WorkCalculator.convert(BigDecimal.valueOf(second.shortDays()), 5)
+                .multiply(BigDecimal.valueOf(100)).divide(target, 1, RoundingMode.DOWN)
+                .min(BigDecimal.valueOf(100).subtract(surePct));
+        model.addAttribute("surePct", surePct.toPlainString());
+        model.addAttribute("shortPct", shortPct.toPlainString());
+
+        if (second.firstDate() != null) {
+            model.addAttribute("startedDays", ChronoUnit.DAYS.between(second.firstDate(), today) + 1);
+        }
+        if (owner.getVisaExpiry() != null && owner.getBufferDays() != null) {
+            model.addAttribute("pace", PacePlan.of(owner.getVisaExpiry(), owner.getBufferDays(), today, second));
+            model.addAttribute("expiryDays", ChronoUnit.DAYS.between(today, owner.getVisaExpiry()));
+            model.addAttribute("expiry", owner.getVisaExpiry());
+        }
+
+        YearMonth month = YearMonth.from(today);
+        model.addAttribute("month", month);
+        model.addAttribute("cells", calendarCells(month, today, ledger.calendar(owner, month)));
+        model.addAttribute("places", places(dashboard));
+        return "home";
     }
 
     @GetMapping("/login")
@@ -39,6 +93,56 @@ public class HomeController {
         model.addAttribute("user", user);
         model.addAttribute("disclaimer", DISCLAIMER);
         return "account";
+    }
+
+    /** 달력 칸 (앞쪽 빈칸 포함). css: full / worked / short / future / blank, today는 별도 표시. */
+    record Cell(String label, String css) {
+    }
+
+    static List<Cell> calendarCells(YearMonth month, LocalDate today, Map<LocalDate, DayKind> kinds) {
+        List<Cell> cells = new ArrayList<>();
+        int blanks = month.atDay(1).getDayOfWeek().getValue() % 7; // 일요일 시작
+        for (int i = 0; i < blanks; i++) {
+            cells.add(new Cell("", "blank"));
+        }
+        for (int d = 1; d <= month.lengthOfMonth(); d++) {
+            LocalDate date = month.atDay(d);
+            DayKind k = kinds.get(date);
+            String css = k == DayKind.FULLTIME ? "full" : k == DayKind.WORKED ? "worked"
+                    : k == DayKind.SHORT ? "short" : date.isAfter(today) ? "future" : "";
+            if (date.equals(today)) {
+                css += " today";
+            }
+            cells.add(new Cell(String.valueOf(d), css));
+        }
+        return cells;
+    }
+
+    /** "일한 곳" 목록 한 줄. */
+    record Place(String name, String detail, String value, boolean counted) {
+    }
+
+    static List<Place> places(LedgerService.Dashboard dashboard) {
+        List<Place> out = new ArrayList<>();
+        for (WorkRecord r : dashboard.records()) {
+            if (r.getVisaYear() != 2) {
+                continue;
+            }
+            boolean counted = dashboard.countedByRecord().getOrDefault(r.getId(), false);
+            if (r.getMode() == WorkMode.EMPLOYMENT_PERIOD) {
+                out.add(new Place(r.getEmployerName(),
+                        "매일 출근 · " + md(r.getStartDate()) + " – " + md(r.getEndDate()),
+                        WorkCalculator.calendarDays(r.getStartDate(), r.getEndDate()) + "일", counted));
+            } else {
+                List<WorkDay> rows = dashboard.daysByRecord().getOrDefault(r.getId(), List.of());
+                out.add(new Place(r.getEmployerName(), "일한 날 기록", rows.size() + "일 일함", counted));
+            }
+        }
+        return out;
+    }
+
+    private static String md(LocalDate d) {
+        return d.getMonthValue() + "월 " + d.getDayOfMonth() + "일";
     }
 
     private static boolean isLoggedIn(Authentication authentication) {

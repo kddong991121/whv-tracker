@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<!-- 공통 스타일과 하단 메뉴. 시안(docs/design/) 색: 강조 #2F6FEB, 배경 #F2F4F6, 흰 카드. -->
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title}">워홀 88</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing:border-box; }
+        body { margin:0; background:#F2F4F6; color:#191F28; font-family:'Noto Sans KR','Malgun Gothic',sans-serif; }
+        .app { max-width:480px; margin:0 auto; padding:0 16px 120px; }
+        a { color:#2F6FEB; }
+        header.top { padding:24px 4px 8px; display:flex; justify-content:space-between; align-items:center; }
+        header.top .sub { font-size:13px; color:#4E5968; }
+        header.top h1 { margin:0; font-size:22px; font-weight:800; }
+        .icon-btn { width:44px; height:44px; border-radius:12px; background:#fff; display:flex; align-items:center; justify-content:center; text-decoration:none; color:#4E5968; font-size:20px; }
+        .card { background:#fff; border-radius:20px; padding:20px; margin-top:12px; }
+        .card h2 { margin:0 0 12px; font-size:17px; font-weight:700; }
+        .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .grid2 .card { padding:18px 16px; display:flex; flex-direction:column; gap:6px; }
+        .label { font-size:13px; color:#4E5968; }
+        .muted { font-size:12px; color:#4E5968; line-height:1.6; }
+        .flash { padding:12px 14px; border-radius:12px; margin-top:12px; font-size:14px; }
+        .flash.ok { background:#E7F6EE; color:#14663C; } .flash.err { background:#FDECEC; color:#B42318; }
+        .notice { display:block; padding:12px 14px; border-radius:12px; background:#FEF3C7; color:#78350F; text-decoration:none; font-size:14px; line-height:1.5; }
+        .btn { display:inline-flex; align-items:center; justify-content:center; height:48px; padding:0 18px; border:0; border-radius:14px; background:#2F6FEB; color:#fff; font-size:16px; font-weight:700; text-decoration:none; font-family:inherit; cursor:pointer; }
+        .btn.ghost { background:#F2F4F6; color:#4E5968; height:44px; font-size:14px; }
+        input, select { width:100%; height:44px; border:1px solid #D1D6DB; border-radius:10px; padding:0 10px; font-size:15px; font-family:inherit; background:#fff; }
+        label.f { display:block; font-size:13px; color:#4E5968; margin:10px 0 4px; }
+        .badge { padding:3px 10px; border-radius:8px; font-size:12px; font-weight:700; }
+        .badge.sure { background:#E8F0FE; color:#1E40AF; } .badge.short { background:#FEF3C7; color:#78350F; } .badge.off { background:#F2F4F6; color:#4E5968; }
+        .dot { width:10px; height:10px; border-radius:5px; display:inline-block; flex-shrink:0; }
+        .row { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+        nav.tabs { position:fixed; left:0; right:0; bottom:0; height:68px; background:#fff; border-top:1px solid #E5E8EB; display:grid; grid-template-columns:repeat(4,1fr); }
+        nav.tabs a { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:12px; color:#4E5968; text-decoration:none; }
+        nav.tabs a.on { color:#191F28; font-weight:700; }
+        nav.tabs span.i { font-size:20px; line-height:1; }
+        .fab { position:fixed; right:max(16px, calc(50% - 224px)); bottom:84px; height:52px; padding:0 20px; border-radius:26px; background:#2F6FEB; color:#fff; font-weight:700; text-decoration:none; display:flex; align-items:center; box-shadow:0 4px 12px rgba(47,111,235,.3); }
+    </style>
+</head>
+<body>
+<nav class="tabs" th:fragment="nav(active)" aria-label="하단 메뉴">
+    <a href="/" th:classappend="${active == 'home'} ? 'on'"><span class="i">⌂</span>홈</a>
+    <a href="/work" th:classappend="${active == 'work'} ? 'on'"><span class="i">▦</span>근무 기록</a>
+    <a href="/check" th:classappend="${active == 'check'} ? 'on'"><span class="i">⌖</span>인정 지역</a>
+    <a href="/ledger" th:classappend="${active == 'ledger'} ? 'on'"><span class="i">≡</span>상세</a>
+</nav>
+</body>
+</html>
