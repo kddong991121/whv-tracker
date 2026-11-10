@@ -99,6 +99,14 @@
                 <option th:each="t : ${disasterTypes}" th:value="${t.name()}" th:text="${t.name()}"></option>
             </select>
         </label>
+        <label>농장 일이면 작업 종류 (가공품 제조·정원 관리는 인정 업무가 아니에요)
+            <select name="workType">
+                <option value="">해당 없음</option>
+                <option th:each="w : ${workTypes}" th:value="${w.name()}" th:text="${w.label()}"></option>
+            </select>
+        </label>
+        <label><input type="checkbox" name="conditionConfirmed" value="true">
+            '조건을 확인해야 해요'로 나오면, 조건을 충족했어요 (체크해야 합계에 넣어요)</label>
         <label>시작일 <input type="date" name="startDate" required></label>
         <label>종료일 <input type="date" name="endDate" required></label>
         <label>무급 날씨 휴무 일수 (선택, 0 이상)
@@ -128,6 +136,14 @@
                 <option th:each="t : ${disasterTypes}" th:value="${t.name()}" th:text="${t.name()}"></option>
             </select>
         </label>
+        <label>농장 일이면 작업 종류 (가공품 제조·정원 관리는 인정 업무가 아니에요)
+            <select name="workType">
+                <option value="">해당 없음</option>
+                <option th:each="w : ${workTypes}" th:value="${w.name()}" th:text="${w.label()}"></option>
+            </select>
+        </label>
+        <label><input type="checkbox" name="conditionConfirmed" value="true">
+            '조건을 확인해야 해요'로 나오면, 조건을 충족했어요 (체크해야 합계에 넣어요)</label>
         <label>시작일 <input type="date" name="startDate" required></label>
         <label>종료일 <input type="date" name="endDate" required></label>
         <label>평소 하루 근무 시간 (이보다 짧게 일한 날은 '짧게 일한 날'로 따로 셉니다)
@@ -165,6 +181,10 @@
                 · 평소 하루 <span th:text="${r.normalHours}"></span>시간</span>
             <span th:if="${r.industry.name() == 'NATURAL_DISASTER_RECOVERY'}" th:text="${r.disasterWorkType == null} ? '· 재해 복구 (유형 미선택, 조건부로 인정 합계 제외)' : ('· 재해 복구 (' + ${r.disasterWorkType.name()} + ')')"></span>
         </div>
+
+        <p th:with="st=${dashboard.statusByRecord[r.id]}, counted=${dashboard.countedByRecord[r.id]}"
+           th:class="${counted} ? 'status ok' : 'status warn'"
+           th:text="${st.message()} + (${counted} ? '' : ' · 합계에 넣지 않았어요 (인정 안 될 수 있는 근무)')"></p>
 
         <div th:if="${r.mode.name() == 'CASUAL_DAYS'}">
             <table th:if="${dashboard.daysByRecord[r.id] != null}">

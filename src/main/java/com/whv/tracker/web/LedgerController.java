@@ -1,5 +1,6 @@
 package com.whv.tracker.web;
 
+import com.whv.tracker.eligibility.WorkType;
 import com.whv.tracker.ledger.DisasterWorkType;
 import com.whv.tracker.ledger.Industry;
 import com.whv.tracker.ledger.LedgerService;
@@ -54,6 +55,7 @@ public class LedgerController {
         model.addAttribute("dashboard", ledger.dashboard(owner));
         model.addAttribute("industries", Industry.values());
         model.addAttribute("disasterTypes", DisasterWorkType.values());
+        model.addAttribute("workTypes", WorkType.values());
         model.addAttribute("disclaimer", DISCLAIMER);
         return "ledger";
     }
@@ -68,10 +70,13 @@ public class LedgerController {
                                 @RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate endDate,
                                 @RequestParam(defaultValue = "0") int unpaidWeatherDays,
                                 @RequestParam(required = false) DisasterWorkType disasterWorkType,
+                                @RequestParam(required = false) WorkType workType,
+                                @RequestParam(defaultValue = "false") boolean conditionConfirmed,
                                 RedirectAttributes redirect) {
         warnIfFuture(redirect, startDate, endDate);
         return run(redirect, authentication, owner -> ledger.addEmployment(owner, employer, postcode, industry,
-                visaYear, startDate, endDate, unpaidWeatherDays, disasterWorkType), "고용 기간을 저장했습니다.");
+                visaYear, startDate, endDate, unpaidWeatherDays, disasterWorkType, workType, conditionConfirmed),
+                "고용 기간을 저장했습니다.");
     }
 
     @PostMapping("/casual")
@@ -87,10 +92,13 @@ public class LedgerController {
                             @RequestParam(required = false) String standardSource,
                             @RequestParam(required = false) DisasterWorkType disasterWorkType,
                             @RequestParam BigDecimal normalHours,
+                            @RequestParam(required = false) WorkType workType,
+                            @RequestParam(defaultValue = "false") boolean conditionConfirmed,
                             RedirectAttributes redirect) {
         warnIfFuture(redirect, startDate, endDate);
         return run(redirect, authentication, owner -> ledger.addCasual(owner, employer, postcode, industry, visaYear,
-                startDate, endDate, standardDays, standardReason, standardSource, disasterWorkType, normalHours),
+                startDate, endDate, standardDays, standardReason, standardSource, disasterWorkType, normalHours,
+                        workType, conditionConfirmed),
                 "일터를 저장했습니다.");
     }
 

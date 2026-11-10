@@ -1,5 +1,6 @@
 package com.whv.tracker.demo;
 
+import com.whv.tracker.eligibility.WorkType;
 import com.whv.tracker.ledger.DisasterWorkType;
 import com.whv.tracker.ledger.Industry;
 import com.whv.tracker.ledger.LedgerService;
@@ -43,12 +44,12 @@ public class DemoDataLoader implements ApplicationRunner {
 
         // 1) 2차 풀타임 연속 고용 (모드 A): 2026-03-02 ~ 2026-05-28 = 88 달력일, 무급 휴무 0일.
         ledger.addEmployment(owner, "Green Valley Farm (데모)", "4670", Industry.REGIONAL_PRIMARY_MINING_CONSTRUCTION,
-                2, LocalDate.of(2026, 3, 2), LocalDate.of(2026, 5, 28), 0, null);
+                2, LocalDate.of(2026, 3, 2), LocalDate.of(2026, 5, 28), 0, null, WorkType.HARVEST_PACKING, false);
 
         // 2) 2차 파트타임 포장 작업 (모드 B): 근무일 10일, 기준 주당 5일.
         var packing = ledger.addCasual(owner, "Sunrise Packing (데모)", "4670",
                 Industry.REGIONAL_PRIMARY_MINING_CONSTRUCTION, 2,
-                LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), 5, null, null, null, new BigDecimal("8"));
+                LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), 5, null, null, null, new BigDecimal("8"), null, false);
         for (LocalDate d : List.of(
                 LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 2), LocalDate.of(2026, 6, 3),
                 LocalDate.of(2026, 6, 8), LocalDate.of(2026, 6, 9), LocalDate.of(2026, 6, 10),
@@ -59,7 +60,7 @@ public class DemoDataLoader implements ApplicationRunner {
         // 하루 여러 근무 예시: 6/23 오전 포장 4시간 + 오후 다른 농장 4시간 = 짧게 일한 날.
         var orchard = ledger.addCasual(owner, "Hilltop Orchard (데모)", "4670",
                 Industry.REGIONAL_PRIMARY_MINING_CONSTRUCTION, 2,
-                LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), 5, null, null, null, new BigDecimal("8"));
+                LocalDate.of(2026, 6, 1), LocalDate.of(2026, 8, 31), 5, null, null, null, new BigDecimal("8"), null, false);
         ledger.addWorkDay(owner, packing.getId(), LocalDate.of(2026, 6, 23), new BigDecimal("4"));
         ledger.addWorkDay(owner, orchard.getId(), LocalDate.of(2026, 6, 23), new BigDecimal("4"));
 
@@ -67,7 +68,7 @@ public class DemoDataLoader implements ApplicationRunner {
         var recovery = ledger.addCasual(owner, "Riverside Recovery Crew (데모)", "2480",
                 Industry.NATURAL_DISASTER_RECOVERY, 3,
                 LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 20), 5, null, null, DisasterWorkType.VOLUNTEER,
-                new BigDecimal("8"));
+                new BigDecimal("8"), null, false);
         for (LocalDate d : List.of(LocalDate.of(2026, 7, 6), LocalDate.of(2026, 7, 7), LocalDate.of(2026, 7, 13))) {
             ledger.addWorkDay(owner, recovery.getId(), d, null);
         }

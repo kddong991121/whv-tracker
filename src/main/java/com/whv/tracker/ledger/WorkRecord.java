@@ -1,5 +1,7 @@
 package com.whv.tracker.ledger;
 
+import com.whv.tracker.eligibility.EligibilityResult.Status;
+import com.whv.tracker.eligibility.WorkType;
 import com.whv.tracker.user.AppUser;
 import jakarta.persistence.Column;
 import jakarta.persistence.FetchType;
@@ -68,6 +70,20 @@ public class WorkRecord {
     /** 일한 날 기록 전용: 이 고용주의 평소 하루 근무 시간. 이보다 짧은 날은 짧게 일한 날 (PRD 4.2.3). */
     @Column(name = "normal_hours", precision = 4, scale = 2)
     private BigDecimal normalHours;
+
+    /** 농장 업종 전용: 작업 종류. 가공품 제조·정원 관리는 인정 업무가 아니다 (PRD 4.1). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "work_type", length = 20)
+    private WorkType workType;
+
+    /** 저장 시점의 인정 지역 판정 스냅샷 (PRD 4.2.8). null이면 조회 시 다시 판정한다. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "eligibility_status", length = 30)
+    private Status eligibilityStatus;
+
+    /** "조건부" 판정을 사용자가 충족했다고 체크했는지. */
+    @Column(name = "condition_confirmed", nullable = false)
+    private boolean conditionConfirmed;
 
     /** 재해 복구 업종 전용: 유급/봉사. 미선택(null)이면 조건부로 인정 합계에서 제외. */
     @Enumerated(EnumType.STRING)
@@ -146,6 +162,25 @@ public class WorkRecord {
 
     public Integer getStandardDays() {
         return standardDays;
+    }
+
+    /** 인정 지역 판정 정보를 기록한다 (저장 전에 서비스가 호출). */
+    public void setEligibility(WorkType workType, Status status, boolean conditionConfirmed) {
+        this.workType = workType;
+        this.eligibilityStatus = status;
+        this.conditionConfirmed = conditionConfirmed;
+    }
+
+    public WorkType getWorkType() {
+        return workType;
+    }
+
+    public Status getEligibilityStatus() {
+        return eligibilityStatus;
+    }
+
+    public boolean isConditionConfirmed() {
+        return conditionConfirmed;
     }
 
     public BigDecimal getNormalHours() {

@@ -63,9 +63,9 @@ class LedgerControllerTest {
     @Test
     void indexRendersDisclaimerAndForms() throws Exception {
         // 모드 B 기록과 근무일 행을 넣어 목록 렌더링 경로도 함께 확인한다
-        WorkRecord casual = ledger.addCasual(owner, "렌더 카페", "4670", Industry.TOURISM_HOSPITALITY, 2,
+        WorkRecord casual = ledger.addCasual(owner, "렌더 카페", "4670", Industry.REGIONAL_PRIMARY_MINING_CONSTRUCTION, 2,
                 LocalDate.of(2027, 1, 1), LocalDate.of(2027, 1, 31), 5, null, null, null,
-                new BigDecimal("8"));
+                new BigDecimal("8"), null, false);
         ledger.addWorkDay(owner, casual.getId(), LocalDate.of(2027, 1, 5), new BigDecimal("6.5"));
 
         mvc.perform(get("/ledger"))

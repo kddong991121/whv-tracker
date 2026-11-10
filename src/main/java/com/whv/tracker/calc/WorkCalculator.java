@@ -158,7 +158,8 @@ public final class WorkCalculator {
             warnings.add("모드 A 기간과 겹친 모드 B 근무일 " + overlapWithEmployment + "일은 모드 A 달력일로만 계산했습니다.");
         }
         if (excludedCountable + excludedCasual > 0) {
-            warnings.add("재해 복구 업종 기록 " + (excludedCountable + excludedCasual) + "건은 유급/봉사 유형이 없어 조건부로 보고 인정 합계에서 제외했습니다.");
+            warnings.add("세컨 인정 지역·업무로 확인되지 않은 기록 " + (excludedCountable + excludedCasual)
+                    + "건은 합계에서 뺐습니다. 아래 기록 목록에서 이유를 확인하세요.");
         }
 
         BigDecimal total = BigDecimal.valueOf(employmentDays).add(casualSum);

@@ -5,6 +5,9 @@ import com.whv.tracker.calc.EmploymentPeriod;
 import com.whv.tracker.calc.VisaSummary;
 import com.whv.tracker.calc.WorkCalculator;
 import com.whv.tracker.calc.WorkDayRow;
+import com.whv.tracker.eligibility.EligibilityResult.Status;
+import com.whv.tracker.eligibility.EligibilityService;
+import com.whv.tracker.eligibility.WorkType;
 import com.whv.tracker.user.AppUser;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -26,12 +29,14 @@ public class LedgerService {
     private final WorkRecordRepository records;
     private final WorkDayRepository days;
     private final WorkStandardChangeRepository changes;
+    private final EligibilityService eligibility;
 
     public LedgerService(WorkRecordRepository records, WorkDayRepository days,
-                         WorkStandardChangeRepository changes) {
+                         WorkStandardChangeRepository changes, EligibilityService eligibility) {
         this.records = records;
         this.days = days;
         this.changes = changes;
+        this.eligibility = eligibility;
     }
 
     /**
@@ -40,7 +45,8 @@ public class LedgerService {
      */
     @Transactional
     public WorkRecord addEmployment(AppUser owner, String employer, String postcode, Industry industry, int visaYear,
-                                    LocalDate start, LocalDate end, int unpaidDays, DisasterWorkType disasterType) {
+                                    LocalDate start, LocalDate end, int unpaidDays, DisasterWorkType disasterType,
+                                    WorkType workType, boolean conditionConfirmed) {
         String name = validateCommon(employer, postcode, industry, visaYear, start, end, disasterType);
         long calendarDays = WorkCalculator.calendarDays(start, end);
         if (unpaidDays < 0 || unpaidDays > calendarDays) {
@@ -57,8 +63,10 @@ public class LedgerService {
                 throw new IllegalArgumentException("같은 고용주의 모드 B 근무일(" + d.getWorkDate() + ")이 이 기간에 있습니다.");
             }
         }
-        return records.save(new WorkRecord(owner, WorkMode.EMPLOYMENT_PERIOD, visaYear, name, postcode, industry,
-                start, end, unpaidDays, null, disasterType, null));
+        WorkRecord record = new WorkRecord(owner, WorkMode.EMPLOYMENT_PERIOD, visaYear, name, postcode, industry,
+                start, end, unpaidDays, null, disasterType, null);
+        judge(record, workType, conditionConfirmed);
+        return records.save(record);
     }
 
     /**
@@ -69,7 +77,8 @@ public class LedgerService {
     @Transactional
     public WorkRecord addCasual(AppUser owner, String employer, String postcode, Industry industry, int visaYear,
                                 LocalDate start, LocalDate end, int standardDays, String reason,
-                                String sourceNote, DisasterWorkType disasterType, BigDecimal normalHours) {
+                                String sourceNote, DisasterWorkType disasterType, BigDecimal normalHours,
+                                WorkType workType, boolean conditionConfirmed) {
         String name = validateCommon(employer, postcode, industry, visaYear, start, end, disasterType);
         validateHours(normalHours, "평소 하루 근무 시간");
         if (standardDays < 1 || standardDays > 7) {
@@ -86,8 +95,10 @@ public class LedgerService {
         if (standardDays != WorkCalculator.DEFAULT_STANDARD_DAYS && trimmedReason.isEmpty()) {
             throw new IllegalArgumentException("기준 주당 근무일이 5가 아니면 변경 사유를 입력해야 합니다.");
         }
-        WorkRecord saved = records.save(new WorkRecord(owner, WorkMode.CASUAL_DAYS, visaYear, name, postcode, industry,
-                start, end, 0, standardDays, disasterType, normalHours));
+        WorkRecord record = new WorkRecord(owner, WorkMode.CASUAL_DAYS, visaYear, name, postcode, industry,
+                start, end, 0, standardDays, disasterType, normalHours);
+        judge(record, workType, conditionConfirmed);
+        WorkRecord saved = records.save(record);
         if (standardDays != WorkCalculator.DEFAULT_STANDARD_DAYS) {
             changes.save(new WorkStandardChange(saved, WorkCalculator.DEFAULT_STANDARD_DAYS, standardDays,
                     trimmedReason, trimmedSource.isEmpty() ? null : trimmedSource));
@@ -157,15 +168,40 @@ public class LedgerService {
         List<VisaSummary> summaries = List.of(
                 WorkCalculator.summarize(2, employment, casual),
                 WorkCalculator.summarize(3, employment, casual));
-        return new Dashboard(all, daysByRecord, summaries);
+        Map<Long, Status> statusByRecord = new java.util.HashMap<>();
+        Map<Long, Boolean> countedByRecord = new java.util.HashMap<>();
+        for (WorkRecord r : all) {
+            statusByRecord.put(r.getId(), statusOf(r));
+            countedByRecord.put(r.getId(), countable(r));
+        }
+        return new Dashboard(all, daysByRecord, summaries, statusByRecord, countedByRecord);
     }
 
     /**
-     * 재해 복구 업종은 유급/봉사 유형을 골랐을 때만 인정한다. 미선택이면 조건부로 인정 합계에서 제외한다.
-     * 그 외 업종은 항상 인정 대상이다.
+     * 인정 지역·업무 판정 (F2). 인정이면 합계에 넣고, 조건부는 사용자가 충족을 체크했을 때만 넣는다 (PRD 4.2.8).
+     * 확인 불가·불인정 업무·조건 미충족 기록은 합계에서 빼고 화면에 "인정 안 될 수 있는 근무"로 보여준다.
      */
-    private static boolean countable(WorkRecord r) {
-        return r.getIndustry() != Industry.NATURAL_DISASTER_RECOVERY || r.getDisasterWorkType() != null;
+    public boolean countable(WorkRecord r) {
+        Status s = statusOf(r);
+        return s == Status.ELIGIBLE || (s == Status.CONDITIONAL && r.isConditionConfirmed());
+    }
+
+    /** 저장된 스냅샷. V5 이전 기록처럼 없으면 지금 시드로 다시 판정한다. */
+    public Status statusOf(WorkRecord r) {
+        if (r.getEligibilityStatus() != null) {
+            return r.getEligibilityStatus();
+        }
+        return eligibility.check(r.getPostcode(), r.getIndustry(), r.getWorkType(), r.getDisasterWorkType(), null)
+                .status();
+    }
+
+    private void judge(WorkRecord record, WorkType workType, boolean conditionConfirmed) {
+        if (workType != null && record.getIndustry() != Industry.REGIONAL_PRIMARY_MINING_CONSTRUCTION) {
+            throw new IllegalArgumentException("작업 종류는 농장·축산·어업·임업·광업·건설 업종에서만 고를 수 있습니다.");
+        }
+        Status status = eligibility.check(record.getPostcode(), record.getIndustry(), workType,
+                record.getDisasterWorkType(), null).status();
+        record.setEligibility(workType, status, conditionConfirmed);
     }
 
     /** 하루 판정: 근무 시간이 그 고용주의 평소 하루 시간 이상이면 true. 봉사는 시간과 무관하게 true. */
@@ -218,7 +254,12 @@ public class LedgerService {
         return name;
     }
 
+    /**
+     * @param statusByRecord  기록별 인정 지역 판정
+     * @param countedByRecord 기록별 합계 포함 여부 (false면 "인정 안 될 수 있는 근무")
+     */
     public record Dashboard(List<WorkRecord> records, Map<Long, List<WorkDay>> daysByRecord,
-                            List<VisaSummary> summaries) {
+                            List<VisaSummary> summaries, Map<Long, Status> statusByRecord,
+                            Map<Long, Boolean> countedByRecord) {
     }
 }
