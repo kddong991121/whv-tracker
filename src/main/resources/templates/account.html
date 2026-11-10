@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>내 계정 - whv-tracker</title>
+    <style>
+        :root { --ink:#1d2330; --muted:#5b6474; --line:#d9dee7; --bg:#f6f7f9; --card:#ffffff; --accent:#2f6fdb; }
+        body { margin:0; padding:16px; background:var(--bg); color:var(--ink); font-family:-apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif; line-height:1.5; }
+        section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:14px; }
+        h1 { font-size:20px; margin:0 0 12px; }
+        p { margin:6px 0; }
+        a.button, button { display:inline-block; font-size:16px; padding:10px 14px; border:0; border-radius:6px; background:var(--accent); color:#fff; text-decoration:none; cursor:pointer; }
+        .muted { font-size:13px; color:var(--muted); }
+    </style>
+</head>
+<body>
+<h1>내 계정</h1>
+
+<section>
+    <p th:if="${user != null}"><strong th:text="${user.displayName}"></strong></p>
+    <p th:if="${user != null}" class="muted" th:text="${user.email}"></p>
+    <p th:if="${user == null}" class="muted">계정 정보를 찾지 못했습니다. 다시 로그인하세요.</p>
+    <form method="post" th:action="@{/logout}">
+        <button type="submit">로그아웃</button>
+    </form>
+</section>
+
+<p class="muted"><a href="/">홈으로</a></p>
+<p class="muted" th:text="${disclaimer}"></p>
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>직접 입력 - 날짜별 근무</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2F6FEB}a:hover{color:#1E54C4}
+</style>
+</helmet>
+<div style="width: 390px; height: 1320px; box-sizing: border-box; background: #F2F4F6; font-family: 'Noto Sans KR', sans-serif; color: #191F28; display: flex; flex-direction: column">
+<header style="padding: 16px 12px 8px; display: flex; align-items: center; gap: 4px">
+<a href="Main.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#191F28" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+</a>
+<h1 style="margin: 0; font-size: 19px; font-weight: 700">근무 추가</h1>
+</header>
+
+<div style="padding: 0 16px 12px">
+<div role="tablist" style="background: #E5E8EB; border-radius: 12px; padding: 4px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px">
+<a href="Upload.dc.html" role="tab" aria-selected="false" style="height: 40px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500; color: #4E5968; text-decoration: none">페이슬립으로</a>
+<a href="Daily.dc.html" role="tab" aria-selected="true" style="height: 40px; border-radius: 9px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #191F28; text-decoration: none">직접 입력</a>
+</div>
+</div>
+
+<main style="padding: 0 16px 24px; display: flex; flex-direction: column; gap: 12px">
+
+<section style="background: #FFFFFF; border-radius: 20px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700">내 일터</h2>
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px">
+<span style="display: flex; align-items: center; gap: 8px"><span style="width: 10px; height: 10px; border-radius: 5px; background: {{accent}}"></span>Green Valley Farm</span>
+<span style="color: #4E5968">수확 · 하루 {{gvNormal}}시간</span>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px">
+<span style="display: flex; align-items: center; gap: 8px"><span style="width: 10px; height: 10px; border-radius: 5px; background: #0F8A6A"></span>Sunny Packing</span>
+<span style="color: #4E5968">과일 포장 · 하루 {{spNormal}}시간</span>
+</div>
+<p style="margin: 0; font-size: 12px; line-height: 1.6; color: #4E5968">'하루 몇 시간'은 그 일터에서 보통 하루 일하는 시간이에요. 이보다 짧게 일한 날은 따로 표시해요.</p>
+</section>
+
+<section style="background: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 4px">
+<h2 style="margin: 0; font-size: 17px; font-weight: 700">11월 3일 – 9일</h2>
+<div style="display: flex; gap: 4px">
+<button type="button" aria-label="이전 주" style="width: 44px; height: 44px; border: none; background: #F2F4F6; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4E5968" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+<button type="button" aria-label="다음 주" style="width: 44px; height: 44px; border: none; background: #F2F4F6; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4E5968" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+</div>
+</div>
+<sc-for list="{{days}}" as="d" hint-placeholder-count="7">
+<div style="padding: 12px 0; border-bottom: 1px solid #F2F4F6; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<span style="font-size: 15px; font-weight: 700">{{d.label}}</span>
+<span style="{{d.badgeStyle}}">{{d.badge}}</span>
+</div>
+<sc-for list="{{d.shifts}}" as="s" hint-placeholder-count="1">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px">
+<span style="display: flex; align-items: center; gap: 8px; font-size: 14px; min-width: 0"><span style="{{s.dot}}"></span>{{s.name}}</span>
+<div style="display: flex; align-items: center; gap: 6px; flex-shrink: 0">
+<button type="button" aria-label="{{s.minusLabel}}" onClick="{{s.minus}}" style="width: 44px; height: 44px; border: none; background: #F2F4F6; border-radius: 10px; font-size: 20px; color: #4E5968; cursor: pointer; font-family: inherit">−</button>
+<span style="width: 52px; text-align: center; font-size: 16px; font-weight: 700">{{s.hours}}</span>
+<button type="button" aria-label="{{s.plusLabel}}" onClick="{{s.plus}}" style="width: 44px; height: 44px; border: none; background: #F2F4F6; border-radius: 10px; font-size: 20px; color: #4E5968; cursor: pointer; font-family: inherit">+</button>
+</div>
+</div>
+</sc-for>
+<sc-if value="{{d.note}}" hint-placeholder-val="{{false}}">
+<span style="font-size: 12px; line-height: 1.5; color: #78350F">{{d.note}}</span>
+</sc-if>
+<button type="button" onClick="{{d.add}}" aria-label="{{d.addLabel}}" style="align-self: flex-start; height: 36px; padding: 0 12px; border: 1px dashed #B0B8C1; border-radius: 10px; background: #FFFFFF; font-family: inherit; font-size: 13px; color: #4E5968; cursor: pointer">+ 근무</button>
+</div>
+</sc-for>
+</section>
+
+<section style="background: #FFFFFF; border-radius: 20px; padding: 18px 20px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; text-align: center">
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; color: #4E5968">일한 날</span><span style="font-size: 20px; font-weight: 800">{{worked}}일</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; color: #4E5968">인정</span><span style="font-size: 20px; font-weight: 800; color: {{accent}}">+{{sure}}일</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; color: #4E5968">짧게 일한 날</span><span style="font-size: 20px; font-weight: 800; color: #92400E">{{short}}일</span></div>
+</section>
+
+<p style="margin: 0 4px; font-size: 12px; line-height: 1.6; color: #4E5968">주 5일 일하면 7일로 쳐줘요(주말 포함). 하루에 두 곳에서 일해도 1일을 넘지 않아요. 짧게 일한 날은 인정 안 될 수도 있어서 홈 화면 숫자에 넣지 않아요.</p>
+
+<button type="button" style="height: 56px; border: none; border-radius: 16px; background: {{accent}}; color: #FFFFFF; font-family: inherit; font-size: 17px; font-weight: 700; cursor: pointer">기록 저장</button>
+<p style="margin: 0 4px; font-size: 12px; line-height: 1.6; color: #4E5968">법률·이민 자문이 아니며, 최종 판단은 호주 내무부 공식 안내를 확인하세요.</p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#2F6FEB","options":["#2F6FEB","#0F8A6A","#7C3AED"]},"gvNormal":{"editor":"range","default":8,"min":4,"max":12,"step":0.5,"unit":"h"},"spNormal":{"editor":"range","default":8,"min":4,"max":12,"step":0.5,"unit":"h"},"$preview":{"width":390,"height":1320}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { days: [
+[{ e: 0, h: 8 }],
+[],
+[{ e: 0, h: 4 }, { e: 1, h: 4 }],
+[{ e: 1, h: 8 }],
+[{ e: 0, h: 6 }],
+[],
+[]
+] };
+}
+renderVals() {
+const accent = this.props.accent ?? '#2F6FEB';
+const gvNormal = this.props.gvNormal ?? 8;
+const spNormal = this.props.spNormal ?? 8;
+const emp = [
+{ name: 'Green Valley Farm', normal: gvNormal, color: accent },
+{ name: 'Sunny Packing', normal: spNormal, color: '#0F8A6A' }
+];
+const labels = ['11.3 (월)', '11.4 (화)', '11.5 (수)', '11.6 (목)', '11.7 (금)', '11.8 (토)', '11.9 (일)'];
+const all = this.state.days;
+const update = (di, fn) => {
+const next = all.map(x => x.map(s => ({ e: s.e, h: s.h })));
+fn(next[di]);
+next[di] = next[di].filter(s => s.h > 0);
+this.setState({ days: next });
+};
+const badgeBase = 'padding: 3px 10px; border-radius: 8px; font-size: 12px; font-weight: 700; ';
+let worked = 0, sureDays = 0, shortDays = 0;
+const days = labels.map((label, di) => {
+const shifts = all[di];
+let status = 'off';
+if (shifts.length > 0) {
+worked++;
+const full = shifts.some(s => s.h >= emp[s.e].normal);
+status = full ? 'sure' : 'short';
+if (full) sureDays++; else shortDays++;
+}
+const combined = status === 'short' && shifts.length > 1;
+return {
+label: label,
+badge: status === 'sure' ? '인정' : status === 'short' ? '짧게 일한 날' : '쉬는 날',
+badgeStyle: badgeBase + (status === 'sure' ? 'background: #E8F0FE; color: #1E40AF;' : status === 'short' ? 'background: #FEF3C7; color: #78350F;' : 'background: #F2F4F6; color: #4E5968;'),
+note: combined ? '두 곳을 합쳐 일한 날이에요. 인정 안 될 수도 있어요.' : (status === 'short' ? '평소보다 짧게 일했어요. 인정 안 될 수도 있어요.' : ''),
+shifts: shifts.map((s, si) => ({
+name: emp[s.e].name,
+dot: 'width: 10px; height: 10px; border-radius: 5px; flex-shrink: 0; background: ' + emp[s.e].color + ';',
+hours: s.h.toFixed(1) + 'h',
+minus: () => update(di, arr => { arr[si].h = Math.max(0, arr[si].h - 0.5); }),
+plus: () => update(di, arr => { arr[si].h = Math.min(24, arr[si].h + 0.5); }),
+minusLabel: label + ' ' + emp[s.e].name + ' 30분 줄이기',
+plusLabel: label + ' ' + emp[s.e].name + ' 30분 늘리기'
+})),
+add: () => update(di, arr => { const used = arr.map(s => s.e); const e = used.indexOf(0) < 0 ? 0 : 1; arr.push({ e: e, h: 4 }); }),
+addLabel: label + ' 근무 추가'
+};
+});
+const sure = (Math.round(sureDays * 7 / 5 * 10) / 10).toFixed(1);
+return { accent: accent, gvNormal: gvNormal, spNormal: spNormal, days: days, worked: worked, sure: sure, short: shortDays };
+}
+}
+</script>
+</body>
+</html>

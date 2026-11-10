@@ -1,0 +1,66 @@
+package com.whv.tracker.ledger;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+/** 모드 B 근무일 1행. 행마다 저장 시점의 W를 스냅샷으로 가진다. 근무시간은 선택, 계산에 쓰지 않는다. */
+@Entity
+@Table(name = "work_day")
+public class WorkDay {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "record_id", nullable = false)
+    private WorkRecord record;
+
+    @Column(name = "work_date", nullable = false)
+    private LocalDate workDate;
+
+    @Column(name = "work_hours", precision = 4, scale = 2)
+    private BigDecimal workHours;
+
+    @Column(name = "standard_days_snapshot", nullable = false)
+    private int standardDays;
+
+    protected WorkDay() {
+    }
+
+    public WorkDay(WorkRecord record, LocalDate workDate, BigDecimal workHours, int standardDays) {
+        this.record = record;
+        this.workDate = workDate;
+        this.workHours = workHours;
+        this.standardDays = standardDays;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public WorkRecord getRecord() {
+        return record;
+    }
+
+    public LocalDate getWorkDate() {
+        return workDate;
+    }
+
+    public BigDecimal getWorkHours() {
+        return workHours;
+    }
+
+    public int getStandardDays() {
+        return standardDays;
+    }
+}

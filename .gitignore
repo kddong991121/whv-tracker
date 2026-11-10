@@ -1,0 +1,5 @@
+target/
+storage/
+*.env
+.env
+application-local.properties

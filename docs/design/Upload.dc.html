@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>페이슬립 올리기</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2F6FEB}a:hover{color:#1E54C4}
+</style>
+</helmet>
+<div style="width: 390px; height: 1060px; box-sizing: border-box; background: #F2F4F6; font-family: 'Noto Sans KR', sans-serif; color: #191F28; display: flex; flex-direction: column">
+<header style="padding: 16px 12px 8px; display: flex; align-items: center; gap: 4px">
+<a href="Main.dc.html" aria-label="뒤로" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#191F28" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+</a>
+<h1 style="margin: 0; font-size: 19px; font-weight: 700">근무 추가</h1>
+</header>
+
+<div style="padding: 0 16px 12px">
+<div role="tablist" style="background: #E5E8EB; border-radius: 12px; padding: 4px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px">
+<a href="Upload.dc.html" role="tab" aria-selected="true" style="height: 40px; border-radius: 9px; background: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #191F28; text-decoration: none">페이슬립으로</a>
+<a href="Daily.dc.html" role="tab" aria-selected="false" style="height: 40px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500; color: #4E5968; text-decoration: none">직접 입력</a>
+</div>
+</div>
+
+<main style="padding: 0 16px 24px; display: flex; flex-direction: column; gap: 12px">
+
+<section style="background: #FFFFFF; border-radius: 20px; padding: 16px; display: flex; align-items: center; gap: 12px">
+<div style="width: 44px; height: 44px; border-radius: 12px; background: #FDECEC; display: flex; align-items: center; justify-content: center; flex-shrink: 0">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1; min-width: 0">
+<span style="font-size: 15px; font-weight: 500">payslip_2026-11-09.pdf</span>
+<span style="font-size: 13px; color: #1B7F4B">읽기 완료 · 파일은 폰에서만 읽어요</span>
+</div>
+<button type="button" style="height: 44px; padding: 0 12px; border: none; background: none; font-family: inherit; font-size: 14px; color: #2F6FEB; cursor: pointer">다시 올리기</button>
+</section>
+
+<section style="background: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 17px; font-weight: 700">페이슬립에서 읽은 내용</h2>
+<div style="display: flex; justify-content: space-between; font-size: 15px"><span style="color: #4E5968">고용주</span><span style="font-weight: 500">Green Valley Farm</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 15px"><span style="color: #4E5968">ABN</span><span style="font-weight: 500">51 824 753 556</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 15px"><span style="color: #4E5968">급여 기간</span><span style="font-weight: 500">11.3 (월) – 11.9 (일)</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 15px"><span style="color: #4E5968">총 근무 시간</span><span style="font-weight: 500">30.5시간</span></div>
+<div style="display: flex; justify-content: space-between; font-size: 15px"><span style="color: #4E5968">고용 형태 <span style="font-size: 12px">(참고용)</span></span><span style="font-weight: 500">캐주얼</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: 15px">
+<span style="color: #4E5968">근무지</span>
+<span style="display: flex; align-items: center; gap: 8px"><span style="font-weight: 500">4870 QLD</span><span style="padding: 3px 8px; border-radius: 6px; background: #E7F6EE; color: #1B7F4B; font-size: 12px; font-weight: 700">세컨 인정 지역</span></span>
+</div>
+<p style="margin: 0; font-size: 12px; color: #4E5968">근무지 포스트코드는 페이슬립에 없을 때가 많아요. 처음 한 번 입력하면 같은 고용주는 자동으로 채워져요.</p>
+</section>
+
+<section style="background: #FFFFFF; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-size: 17px; font-weight: 700">이번 주 일한 날을 골라주세요</h2>
+<span style="font-size: 13px; color: #4E5968">페이슬립엔 주간 합계만 있어서 날짜는 직접 확인해요</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{week}}" as="d" hint-placeholder-count="7">
+<button type="button" aria-pressed="{{d.on}}" onClick="{{d.toggle}}" style="{{d.style}}">
+<span style="font-size: 12px">{{d.dow}}</span>
+<span style="font-size: 15px; font-weight: 700">{{d.date}}</span>
+</button>
+</sc-for>
+</div>
+<div style="background: #F2F4F6; border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center">
+<span style="font-size: 14px; color: #4E5968">{{count}}일 일함 · 주 5일 = 7일로 계산</span>
+<span style="font-size: 18px; font-weight: 800; color: {{accent}}">+{{converted}}일 인정</span>
+</div>
+</section>
+
+<section style="background: #FFFFFF; border-radius: 20px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px">
+<label style="display: flex; align-items: center; gap: 10px; font-size: 14px; min-height: 44px; cursor: pointer">
+<input type="checkbox" checked style="width: 20px; height: 20px; accent-color: {{accent}}">
+날짜·시간·일터만 읽어서 저장하는 데 동의해요 (TFN·계좌번호는 읽지 않아요)
+</label>
+<label style="display: flex; align-items: center; gap: 10px; font-size: 14px; min-height: 44px; cursor: pointer">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1B7F4B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+계산에 필요한 내용(날짜·시간·일터)만 저장해요. 원본 파일은 서버로 보내지 않아요
+</label>
+</section>
+
+<button type="button" style="height: 56px; border: none; border-radius: 16px; background: {{accent}}; color: #FFFFFF; font-family: inherit; font-size: 17px; font-weight: 700; cursor: pointer">기록 저장</button>
+<p style="margin: 0 4px; font-size: 12px; line-height: 1.6; color: #4E5968">법률·이민 자문이 아니며, 최종 판단은 호주 내무부 공식 안내를 확인하세요.</p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#2F6FEB","options":["#2F6FEB","#0F8A6A","#7C3AED"]},"$preview":{"width":390,"height":1060}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = { on: [true, false, true, true, false, false, true] };
+}
+renderVals() {
+const accent = this.props.accent ?? '#2F6FEB';
+const dows = ['월', '화', '수', '목', '금', '토', '일'];
+const dates = [3, 4, 5, 6, 7, 8, 9];
+const on = this.state.on;
+const base = 'height: 64px; border-radius: 12px; font-family: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; padding: 0; ';
+const week = dows.map((dow, i) => ({
+dow: dow,
+date: String(dates[i]),
+on: on[i] ? 'true' : 'false',
+style: on[i] ? base + 'border: none; background: ' + accent + '; color: #FFFFFF;' : base + 'border: 1px solid #D1D6DB; background: #FFFFFF; color: #4E5968;',
+toggle: () => {
+const next = this.state.on.slice();
+next[i] = !next[i];
+this.setState({ on: next });
+}
+}));
+const count = on.filter(Boolean).length;
+const converted = (Math.round(count * 1.4 * 10) / 10).toFixed(1);
+return { accent: accent, week: week, count: count, converted: converted };
+}
+}
+</script>
+</body>
+</html>

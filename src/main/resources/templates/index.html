@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>whv-tracker</title>
+    <style>
+        :root { --ink:#1d2330; --muted:#5b6474; --line:#d9dee7; --bg:#f6f7f9; --card:#ffffff; --accent:#2f6fdb; }
+        body { margin:0; padding:16px; background:var(--bg); color:var(--ink); font-family:-apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif; line-height:1.5; }
+        section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:14px; }
+        h1 { font-size:20px; margin:0 0 12px; }
+        p { margin:6px 0; }
+        a.button, button { display:inline-block; font-size:16px; padding:10px 14px; border:0; border-radius:6px; background:var(--accent); color:#fff; text-decoration:none; cursor:pointer; }
+        .muted { font-size:13px; color:var(--muted); }
+    </style>
+</head>
+<body>
+<h1>whv-tracker</h1>
+
+<section>
+    <p>워킹홀리데이 세컨·서드 비자 인정 근무 기록을 한곳에서 확인합니다.</p>
+    <p th:if="${!loggedIn}">
+        <a class="button" href="/login">구글로 로그인</a>
+    </p>
+    <div th:if="${loggedIn}">
+        <p><a class="button" href="/ledger">근무 기록</a> <a class="button" href="/account">내 계정</a></p>
+        <form method="post" th:action="@{/logout}">
+            <button type="submit">로그아웃</button>
+        </form>
+    </div>
+</section>
+
+<p class="muted" th:text="${disclaimer}"></p>
+</body>
+</html>
