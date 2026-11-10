@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/** 모드 B 근무일 1행. 행마다 저장 시점의 W를 스냅샷으로 가진다. 근무시간은 선택, 계산에 쓰지 않는다. */
+/** 일한 날 근무 1행 (고용주 1곳의 그 날짜 근무). 행마다 저장 시점의 W를 스냅샷으로 가진다. 근무 시간은 하루 판정에 쓴다. */
 @Entity
 @Table(name = "work_day")
 public class WorkDay {

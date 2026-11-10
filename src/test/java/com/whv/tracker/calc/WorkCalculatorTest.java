@@ -269,4 +269,42 @@ class WorkCalculatorTest {
         assertThat(s.span()).isEqualTo(88);
         assertThat(s.eligible()).isTrue();
     }
+
+    @Test
+    void multiShift_oneFullShiftMakesDaySure_andDayCountsOnce() {
+        // 같은 날 A 농장 8시간(평소 이상) + B 포장 4시간(짧음) = 인정 1일, 짧게 일한 날 0
+        CasualRecord a = casual(1, 2, JAN1, JAN1.plusDays(30), List.of(new WorkDayRow(JAN1, 5, true)));
+        CasualRecord b = casual(2, 2, JAN1, JAN1.plusDays(30), List.of(new WorkDayRow(JAN1, 5, false)));
+
+        VisaSummary s = WorkCalculator.summarize(2, List.of(), List.of(a, b));
+
+        assertThat(fmt(s.casualConverted())).isEqualTo("1.4");
+        assertThat(s.shortDays()).isZero();
+    }
+
+    @Test
+    void onlyShortShifts_areShortDay_notCountedAndNotInSpan() {
+        // 4시간 + 4시간 (둘 다 평소보다 짧음) = 짧게 일한 날. 합계와 기간 계산에서 뺀다
+        CasualRecord a = casual(1, 2, JAN1, JAN1.plusDays(30), List.of(
+                new WorkDayRow(JAN1, 5, false), new WorkDayRow(JAN1.plusDays(9), 5, true)));
+        CasualRecord b = casual(2, 2, JAN1, JAN1.plusDays(30), List.of(new WorkDayRow(JAN1, 5, false)));
+
+        VisaSummary s = WorkCalculator.summarize(2, List.of(), List.of(a, b));
+
+        assertThat(s.shortDays()).isEqualTo(1);
+        assertThat(fmt(s.total())).isEqualTo("1.4");
+        assertThat(s.span()).isEqualTo(1);
+    }
+
+    @Test
+    void displayDays_roundsDown() {
+        // 42일 × 7 ÷ 5 = 58.8 → 홈 표시 58
+        CasualRecord r = casual(1, 2, JAN1, JAN1.plusDays(120), rows(JAN1, 42, 5));
+
+        VisaSummary s = WorkCalculator.summarize(2, List.of(), List.of(r));
+
+        assertThat(fmt(s.total())).isEqualTo("58.8");
+        assertThat(s.displayDays()).isEqualTo(58);
+        assertThat(s.remainingDays()).isEqualTo(30);
+    }
 }

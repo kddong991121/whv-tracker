@@ -12,6 +12,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Locale;
 
@@ -64,6 +65,10 @@ public class WorkRecord {
     @Column(name = "standard_days")
     private Integer standardDays;
 
+    /** 일한 날 기록 전용: 이 고용주의 평소 하루 근무 시간. 이보다 짧은 날은 짧게 일한 날 (PRD 4.2.3). */
+    @Column(name = "normal_hours", precision = 4, scale = 2)
+    private BigDecimal normalHours;
+
     /** 재해 복구 업종 전용: 유급/봉사. 미선택(null)이면 조건부로 인정 합계에서 제외. */
     @Enumerated(EnumType.STRING)
     @Column(name = "disaster_work_type", length = 20)
@@ -74,7 +79,7 @@ public class WorkRecord {
 
     public WorkRecord(AppUser owner, WorkMode mode, int visaYear, String employerName, String postcode, Industry industry,
                       LocalDate startDate, LocalDate endDate, int unpaidWeatherDays, Integer standardDays,
-                      DisasterWorkType disasterWorkType) {
+                      DisasterWorkType disasterWorkType, BigDecimal normalHours) {
         this.owner = owner;
         this.mode = mode;
         this.visaYear = visaYear;
@@ -87,6 +92,7 @@ public class WorkRecord {
         this.unpaidWeatherDays = unpaidWeatherDays;
         this.standardDays = standardDays;
         this.disasterWorkType = disasterWorkType;
+        this.normalHours = normalHours;
     }
 
     /** 고용주 비교 키. 공백 차이는 다른 고용주로 본다 (공백 제거 키는 쓰지 않는다). */
@@ -140,6 +146,10 @@ public class WorkRecord {
 
     public Integer getStandardDays() {
         return standardDays;
+    }
+
+    public BigDecimal getNormalHours() {
+        return normalHours;
     }
 
     public DisasterWorkType getDisasterWorkType() {

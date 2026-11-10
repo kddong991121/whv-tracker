@@ -25,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class LedgerServiceIntegrationTest {
 
+    private static final BigDecimal H8 = new BigDecimal("8");
+
     private static final LocalDate START = LocalDate.of(2027, 1, 1);
 
     @Autowired
@@ -47,7 +49,7 @@ class LedgerServiceIntegrationTest {
     private WorkStandardChangeRepository changes;
 
     private WorkRecord casual(String employer, LocalDate start, LocalDate end) {
-        return ledger.addCasual(owner, employer, "4670", Industry.TOURISM_HOSPITALITY, 2, start, end, 5, null, null, null);
+        return ledger.addCasual(owner, employer, "4670", Industry.TOURISM_HOSPITALITY, 2, start, end, 5, null, null, null, H8);
     }
 
     @Test
@@ -63,18 +65,42 @@ class LedgerServiceIntegrationTest {
     }
 
     @Test
-    void secondRowOnSameDate_isBlocked_forSameAndDifferentEmployer() {
+    void sameDate_sameEmployerBlocked_otherEmployerAllowed_dayTotalOver24Blocked() {
         WorkRecord a = casual("지은 카페", START, START.plusDays(10));
         WorkRecord b = casual("다른 카페", START, START.plusDays(10));
-        ledger.addWorkDay(owner, a.getId(), START, null);
+        WorkRecord c = casual("세번째 카페", START, START.plusDays(10));
+        ledger.addWorkDay(owner, a.getId(), START, new BigDecimal("16"));
 
+        assertThatThrownBy(() -> ledger.addWorkDay(owner, a.getId(), START, new BigDecimal("1")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("이미 있습니다");
+        // 하루 여러 근무: 다른 고용주의 같은 날짜 행은 허용
+        ledger.addWorkDay(owner, b.getId(), START, new BigDecimal("8"));
+        // 같은 날짜 합계 24시간 초과는 거부
+        assertThatThrownBy(() -> ledger.addWorkDay(owner, c.getId(), START, new BigDecimal("0.5")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("24시간");
+    }
+
+    @Test
+    void multiShiftDay_combinedOnlyIsShortDay_andNotCounted() {
+        WorkRecord a = casual("오전 농장", START, START.plusDays(10));
+        WorkRecord b = casual("오후 포장", START, START.plusDays(10));
+        ledger.addWorkDay(owner, a.getId(), START, new BigDecimal("4"));
+        ledger.addWorkDay(owner, b.getId(), START, new BigDecimal("4"));
+        ledger.addWorkDay(owner, a.getId(), START.plusDays(1), new BigDecimal("8"));
+
+        VisaSummary second = ledger.dashboard(owner).summaries().get(0);
+        assertThat(second.shortDays()).isEqualTo(1);
+        assertThat(second.casualConvertedText()).isEqualTo("1.4");
+        assertThat(second.displayDays()).isEqualTo(1);
+    }
+
+    @Test
+    void workHours_requiredExceptVolunteer() {
+        WorkRecord a = casual("시간 필수", START, START.plusDays(10));
         assertThatThrownBy(() -> ledger.addWorkDay(owner, a.getId(), START, null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("합계 시간");
-        // 다른 고용주라도 같은 날짜에 두 번째 행은 거부한다 (두 고용주의 합계는 한 행에 입력)
-        assertThatThrownBy(() -> ledger.addWorkDay(owner, b.getId(), START, null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("합계 시간");
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -108,7 +134,7 @@ class LedgerServiceIntegrationTest {
     void workDayOutsidePeriod_isRejected() {
         WorkRecord a = casual("기간 테스트", START, START.plusDays(5));
 
-        assertThatThrownBy(() -> ledger.addWorkDay(owner, a.getId(), START.plusDays(6), null))
+        assertThatThrownBy(() -> ledger.addWorkDay(owner, a.getId(), START.plusDays(6), H8))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -133,20 +159,20 @@ class LedgerServiceIntegrationTest {
     @Test
     void standardDaysOutOfRange_areRejected() {
         assertThatThrownBy(() -> ledger.addCasual(owner, "W0", "4670", Industry.TOURISM_HOSPITALITY, 2,
-                START, START.plusDays(30), 0, "사유", null, null)).isInstanceOf(IllegalArgumentException.class);
+                START, START.plusDays(30), 0, "사유", null, null, H8)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> ledger.addCasual(owner, "W8", "4670", Industry.TOURISM_HOSPITALITY, 2,
-                START, START.plusDays(30), 8, "사유", null, null)).isInstanceOf(IllegalArgumentException.class);
+                START, START.plusDays(30), 8, "사유", null, null, H8)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void standardChangeWithoutReason_isRejected_andWithReasonIsLoggedOnce() {
         assertThatThrownBy(() -> ledger.addCasual(owner, "W 테스트", "4670", Industry.TOURISM_HOSPITALITY, 2,
-                START, START.plusDays(30), 4, "  ", null, null))
+                START, START.plusDays(30), 4, "  ", null, null, H8))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("사유");
 
         WorkRecord ok = ledger.addCasual(owner, "W 사유 테스트", "4670", Industry.TOURISM_HOSPITALITY, 2,
-                START, START.plusDays(30), 4, "업종 표준 근거", "근거 문서 2026-11-10", null);
+                START, START.plusDays(30), 4, "업종 표준 근거", "근거 문서 2026-11-10", null, H8);
 
         assertThat(ok.getStandardDays()).isEqualTo(4);
         assertThat(changes.count()).isEqualTo(1);
@@ -158,9 +184,9 @@ class LedgerServiceIntegrationTest {
         String long256 = "가".repeat(256);
 
         assertThatThrownBy(() -> ledger.addCasual(owner, "긴 사유", "4670", Industry.TOURISM_HOSPITALITY, 2,
-                START, START.plusDays(30), 4, long256, null, null)).isInstanceOf(IllegalArgumentException.class);
+                START, START.plusDays(30), 4, long256, null, null, H8)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> ledger.addCasual(owner, "긴 출처", "4670", Industry.TOURISM_HOSPITALITY, 2,
-                START, START.plusDays(30), 4, "사유", long256, null)).isInstanceOf(IllegalArgumentException.class);
+                START, START.plusDays(30), 4, "사유", long256, null, H8)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -177,7 +203,7 @@ class LedgerServiceIntegrationTest {
     void modeAPeriodAndModeBRow_ofSameEmployer_conflictInBothDirections() {
         // 방향 1: 모드 B 근무일이 있는 기간에 같은 고용주의 모드 A 기간을 추가하면 거부
         WorkRecord b = casual("교차 농장", START, START.plusDays(30));
-        ledger.addWorkDay(owner, b.getId(), START.plusDays(5), null);
+        ledger.addWorkDay(owner, b.getId(), START.plusDays(5), H8);
         assertThatThrownBy(() -> ledger.addEmployment(owner, "교차 농장", "4670", Industry.TOURISM_HOSPITALITY, 2,
                 START, START.plusDays(10), 0, null))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -187,7 +213,7 @@ class LedgerServiceIntegrationTest {
         ledger.addEmployment(owner, "교차 농장2", "4670", Industry.TOURISM_HOSPITALITY, 2,
                 START.plusDays(40), START.plusDays(50), 0, null);
         WorkRecord b2 = casual("교차 농장2", START, START.plusDays(60));
-        assertThatThrownBy(() -> ledger.addWorkDay(owner, b2.getId(), START.plusDays(45), null))
+        assertThatThrownBy(() -> ledger.addWorkDay(owner, b2.getId(), START.plusDays(45), H8))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("모드 A");
     }
@@ -224,7 +250,7 @@ class LedgerServiceIntegrationTest {
     @Test
     void disasterRecovery_volunteerType_countsOneDayPerRow() {
         WorkRecord v = ledger.addCasual(owner, "재해 봉사", "7000", Industry.NATURAL_DISASTER_RECOVERY, 2,
-                START, START.plusDays(30), 5, null, null, com.whv.tracker.ledger.DisasterWorkType.VOLUNTEER);
+                START, START.plusDays(30), 5, null, null, com.whv.tracker.ledger.DisasterWorkType.VOLUNTEER, H8);
         ledger.addWorkDay(owner, v.getId(), START, null);
 
         assertThat(ledger.dashboard(owner).summaries().get(0).casualConvertedText()).isEqualTo("1.0");
@@ -261,7 +287,7 @@ class LedgerServiceIntegrationTest {
         WorkRecord mine = casual("내 카페", START, START.plusDays(10));
 
         assertThat(ledger.dashboard(other).records()).isEmpty();
-        assertThatThrownBy(() -> ledger.addWorkDay(other, mine.getId(), START, null))
+        assertThatThrownBy(() -> ledger.addWorkDay(other, mine.getId(), START, H8))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("찾을 수 없습니다");
     }

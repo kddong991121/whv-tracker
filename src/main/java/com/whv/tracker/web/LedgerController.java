@@ -86,11 +86,12 @@ public class LedgerController {
                             @RequestParam(required = false) String standardReason,
                             @RequestParam(required = false) String standardSource,
                             @RequestParam(required = false) DisasterWorkType disasterWorkType,
+                            @RequestParam BigDecimal normalHours,
                             RedirectAttributes redirect) {
         warnIfFuture(redirect, startDate, endDate);
         return run(redirect, authentication, owner -> ledger.addCasual(owner, employer, postcode, industry, visaYear,
-                startDate, endDate, standardDays, standardReason, standardSource, disasterWorkType),
-                "모드 B 고용 기간을 저장했습니다.");
+                startDate, endDate, standardDays, standardReason, standardSource, disasterWorkType, normalHours),
+                "일터를 저장했습니다.");
     }
 
     @PostMapping("/casual/{recordId}/days")

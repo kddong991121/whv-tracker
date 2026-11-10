@@ -58,18 +58,20 @@ public class LedgerService {
             }
         }
         return records.save(new WorkRecord(owner, WorkMode.EMPLOYMENT_PERIOD, visaYear, name, postcode, industry,
-                start, end, unpaidDays, null, disasterType));
+                start, end, unpaidDays, null, disasterType, null));
     }
 
     /**
      * 모드 B: 고용 기간 1건 (근무일은 addWorkDay로 날짜마다 추가).
+     * normalHours는 이 고용주의 평소 하루 근무 시간 (0 초과 24 이하, 소수 둘째 자리까지).
      * W가 기본값 5가 아니면 사유가 필수이며 변경 이력을 남긴다. 사유와 근거 출처는 각각 255자 이내.
      */
     @Transactional
     public WorkRecord addCasual(AppUser owner, String employer, String postcode, Industry industry, int visaYear,
                                 LocalDate start, LocalDate end, int standardDays, String reason,
-                                String sourceNote, DisasterWorkType disasterType) {
+                                String sourceNote, DisasterWorkType disasterType, BigDecimal normalHours) {
         String name = validateCommon(employer, postcode, industry, visaYear, start, end, disasterType);
+        validateHours(normalHours, "평소 하루 근무 시간");
         if (standardDays < 1 || standardDays > 7) {
             throw new IllegalArgumentException("기준 주당 근무일 W는 1~7 정수여야 합니다.");
         }
@@ -85,7 +87,7 @@ public class LedgerService {
             throw new IllegalArgumentException("기준 주당 근무일이 5가 아니면 변경 사유를 입력해야 합니다.");
         }
         WorkRecord saved = records.save(new WorkRecord(owner, WorkMode.CASUAL_DAYS, visaYear, name, postcode, industry,
-                start, end, 0, standardDays, disasterType));
+                start, end, 0, standardDays, disasterType, normalHours));
         if (standardDays != WorkCalculator.DEFAULT_STANDARD_DAYS) {
             changes.save(new WorkStandardChange(saved, WorkCalculator.DEFAULT_STANDARD_DAYS, standardDays,
                     trimmedReason, trimmedSource.isEmpty() ? null : trimmedSource));
@@ -94,29 +96,36 @@ public class LedgerService {
     }
 
     /**
-     * 모드 B 근무일 1행 추가. 날짜당 1행이다.
-     * 같은 날짜에 어떤 고용주의 행이든 있으면 거부한다. 같은 날 여러 고용주의 근무는 한 행에 합계 시간으로 입력한다.
-     * 같은 고용주의 모드 A 기간에 든 날짜는 거부한다.
+     * 일한 날 근무 1행 추가 (고용주 1곳의 그 날짜 근무).
+     * 같은 날짜에 다른 고용주의 행은 추가할 수 있다 (하루 여러 근무). 같은 고용주는 날짜당 1행이다.
+     * 같은 날짜 근무 시간 합계가 24시간을 넘으면 거부한다. 근무 시간은 필수이며, 재해 복구 봉사만 생략할 수 있다.
+     * 같은 고용주의 정규 근무 기간에 든 날짜는 거부한다.
      */
     @Transactional
     public WorkDay addWorkDay(AppUser owner, long recordId, LocalDate date, BigDecimal hours) {
         WorkRecord record = records.findById(recordId).filter(r -> r.getOwner().getId().equals(owner.getId()))
                 .orElseThrow(() -> new IllegalArgumentException("기록을 찾을 수 없습니다."));
         if (record.getMode() != WorkMode.CASUAL_DAYS) {
-            throw new IllegalArgumentException("모드 A 기록에는 근무일을 추가할 수 없습니다.");
+            throw new IllegalArgumentException("정규 근무 기록에는 근무일을 추가할 수 없습니다.");
         }
         if (date == null || date.isBefore(record.getStartDate()) || date.isAfter(record.getEndDate())) {
             throw new IllegalArgumentException("근무 날짜가 고용 기간 밖입니다.");
         }
-        if (hours != null && (hours.signum() <= 0 || hours.compareTo(MAX_HOURS) > 0)) {
-            throw new IllegalArgumentException("근무시간은 0 초과 24 이하여야 합니다.");
+        boolean volunteer = record.getDisasterWorkType() == DisasterWorkType.VOLUNTEER;
+        if (hours != null || !volunteer) {
+            validateHours(hours, "근무 시간");
         }
-        if (hours != null && hours.scale() > 2) {
-            throw new IllegalArgumentException("근무시간은 소수 둘째 자리까지 입력할 수 있습니다.");
+        BigDecimal dayTotal = hours == null ? BigDecimal.ZERO : hours;
+        for (WorkDay d : days.findByRecordOwnerAndWorkDate(owner, date)) {
+            if (d.getRecord().getId().equals(record.getId())) {
+                throw new IllegalArgumentException("이 고용주의 " + date + " 근무가 이미 있습니다.");
+            }
+            if (d.getWorkHours() != null) {
+                dayTotal = dayTotal.add(d.getWorkHours());
+            }
         }
-        if (!days.findByRecordOwnerAndWorkDate(owner, date).isEmpty()) {
-            throw new IllegalArgumentException("같은 날짜에 이미 근무 행이 있습니다. 같은 날 여러 고용주에서 일했다면 "
-                    + "기존 행에 합계 시간을 입력하세요.");
+        if (dayTotal.compareTo(MAX_HOURS) > 0) {
+            throw new IllegalArgumentException(date + " 근무 시간 합계가 24시간을 넘습니다.");
         }
         for (WorkRecord r : records.findByOwnerAndEmployerKey(owner, record.getEmployerKey())) {
             if (r.getMode() == WorkMode.EMPLOYMENT_PERIOD && overlaps(r.getStartDate(), r.getEndDate(), date, date)) {
@@ -141,7 +150,7 @@ public class LedgerService {
                 .map(r -> new CasualRecord(r.getId(), r.getVisaYear(), r.getStartDate(), r.getEndDate(),
                         countable(r), r.getDisasterWorkType() == DisasterWorkType.VOLUNTEER,
                         daysByRecord.getOrDefault(r.getId(), List.of()).stream()
-                                .map(d -> new WorkDayRow(d.getWorkDate(), d.getStandardDays()))
+                                .map(d -> new WorkDayRow(d.getWorkDate(), d.getStandardDays(), isFull(r, d)))
                                 .toList()))
                 .toList();
 
@@ -157,6 +166,24 @@ public class LedgerService {
      */
     private static boolean countable(WorkRecord r) {
         return r.getIndustry() != Industry.NATURAL_DISASTER_RECOVERY || r.getDisasterWorkType() != null;
+    }
+
+    /** 하루 판정: 근무 시간이 그 고용주의 평소 하루 시간 이상이면 true. 봉사는 시간과 무관하게 true. */
+    private static boolean isFull(WorkRecord r, WorkDay d) {
+        if (r.getDisasterWorkType() == DisasterWorkType.VOLUNTEER) {
+            return true;
+        }
+        return d.getWorkHours() != null && r.getNormalHours() != null
+                && d.getWorkHours().compareTo(r.getNormalHours()) >= 0;
+    }
+
+    private static void validateHours(BigDecimal hours, String label) {
+        if (hours == null || hours.signum() <= 0 || hours.compareTo(MAX_HOURS) > 0) {
+            throw new IllegalArgumentException(label + "은(는) 0 초과 24 이하여야 합니다.");
+        }
+        if (hours.scale() > 2) {
+            throw new IllegalArgumentException(label + "은(는) 소수 둘째 자리까지 입력할 수 있습니다.");
+        }
     }
 
     private static boolean overlaps(LocalDate s1, LocalDate e1, LocalDate s2, LocalDate e2) {
