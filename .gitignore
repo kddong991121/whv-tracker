@@ -3,3 +3,4 @@ storage/
 *.env
 .env
 application-local.properties
+.claude/settings.local.json
