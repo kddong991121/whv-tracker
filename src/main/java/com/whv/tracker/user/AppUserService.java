@@ -33,6 +33,19 @@ public class AppUserService {
                 .orElseGet(() -> users.save(new AppUser(sub, email, displayName)));
     }
 
+    /** F5 입력 저장. 만료일 필수, 버퍼 일수는 0 이상 정수 (PRD F5). */
+    @Transactional
+    public void updateVisaPlan(AppUser owner, java.time.LocalDate visaExpiry, Integer bufferDays) {
+        if (visaExpiry == null) {
+            throw new IllegalArgumentException("1년차 비자 만료일을 입력하세요.");
+        }
+        if (bufferDays == null || bufferDays < 0) {
+            throw new IllegalArgumentException("버퍼 일수는 0 이상 정수로 입력하세요.");
+        }
+        AppUser u = users.findById(owner.getId()).orElseThrow(() -> new IllegalArgumentException("계정을 찾지 못했습니다."));
+        u.updateVisaPlan(visaExpiry, bufferDays);
+    }
+
     @Transactional(readOnly = true)
     public AppUser findByGoogleSubject(String sub) {
         return users.findByGoogleSubject(sub).orElse(null);

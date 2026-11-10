@@ -11,12 +11,13 @@ import java.util.List;
  * @param casualConverted 모드 B 환산 일수 (상한·중복 제거 후)
  * @param total           모드 A + 모드 B 합계 원값
  * @param span            인정일 첫날~마지막날 달력일 수 (없으면 0)
+ * @param firstDate       첫 인정일 (없으면 null)
  * @param shortDays       짧게 일한 날 수 (평소 시간 이상 근무가 없는 날짜, 합계에 넣지 않음)
  * @param warnings        경고 문구 목록
  */
 public record VisaSummary(int visaYear, BigDecimal rawTotal, long employmentDays,
                           BigDecimal casualConverted, BigDecimal total, long span,
-                          int shortDays, List<String> warnings) {
+                          java.time.LocalDate firstDate, int shortDays, List<String> warnings) {
 
     public int target() {
         return WorkCalculator.targetFor(visaYear);

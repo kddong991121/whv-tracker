@@ -29,6 +29,14 @@ public class AppUser {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    /** F5: 1년차 비자 만료일 (선택). */
+    @Column(name = "visa_expiry")
+    private java.time.LocalDate visaExpiry;
+
+    /** F5: 완료 목표 버퍼 일수 (선택, 0 이상). */
+    @Column(name = "buffer_days")
+    private Integer bufferDays;
+
     protected AppUser() {
     }
 
@@ -42,6 +50,19 @@ public class AppUser {
     void refresh(String email, String displayName) {
         this.email = email;
         this.displayName = displayName;
+    }
+
+    void updateVisaPlan(java.time.LocalDate visaExpiry, int bufferDays) {
+        this.visaExpiry = visaExpiry;
+        this.bufferDays = bufferDays;
+    }
+
+    public java.time.LocalDate getVisaExpiry() {
+        return visaExpiry;
+    }
+
+    public Integer getBufferDays() {
+        return bufferDays;
     }
 
     public Long getId() {

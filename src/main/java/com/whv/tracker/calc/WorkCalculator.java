@@ -165,7 +165,7 @@ public final class WorkCalculator {
         BigDecimal total = BigDecimal.valueOf(employmentDays).add(casualSum);
         long span = first == null ? 0 : calendarDays(first, last);
         BigDecimal rawTotal = BigDecimal.valueOf(rawEmployment).add(rawCasual);
-        return new VisaSummary(visaYear, rawTotal, employmentDays, casualSum, total, span, shortDays, warnings);
+        return new VisaSummary(visaYear, rawTotal, employmentDays, casualSum, total, span, first, shortDays, warnings);
     }
 
     /** 행 하나의 값: 봉사는 1일, 그 외는 1 × 7 ÷ W. */

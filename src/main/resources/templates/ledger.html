@@ -47,6 +47,29 @@
 <div th:if="${error}" class="flash err" th:text="${error}"></div>
 <div th:if="${warning}" class="flash warn" th:text="${warning}"></div>
 
+<!-- F5 남은 기간과 페이스 (세컨 비자 기준) -->
+<section>
+    <h2>비자 만료일까지</h2>
+    <div th:if="${pace}">
+        <p class="status warn" th:if="${pace.expired()}">비자 만료일이 지났는지 확인해 주세요.</p>
+        <p class="status ok" th:if="${!pace.expired() and pace.goalMet()}">목표 달성! 세컨 비자 88일을 채웠어요.</p>
+        <p class="status warn" th:if="${pace.banner() != null}" th:text="'완료 목표일까지 ' + ${pace.remainingDays()} + '일 남았어요 (D-' + ${pace.banner()} + ' 알림)'"></p>
+        <div class="row"><span>완료 목표일</span><span th:text="${pace.targetDate()}"></span></div>
+        <div class="row" th:unless="${pace.targetPassed()}"><span>남은 기간</span><span th:text="${pace.remainingDays()} + '일'"></span></div>
+        <p class="status warn" th:if="${pace.targetPassed() and !pace.expired()}">완료 목표일이 지났어요.</p>
+        <div class="row" th:unless="${pace.goalMet()}"><span>더 필요한 인정 일수</span><span th:text="${pace.neededDays()} + '일'"></span></div>
+        <div class="row" th:unless="${pace.goalMet()}"><span>일주일에 필요한 인정 일수</span>
+            <span th:text="${pace.weeklyNeeded() != null} ? ${pace.weeklyNeeded()} + '일' : '계산할 수 없어요'"></span></div>
+        <p class="status warn" th:if="${pace.spanShort()}">시작한 지 3개월(88일)이 지나야 신청할 수 있어요. 완료 목표일까지 가도 88일이 안 돼요.</p>
+    </div>
+    <form method="post" th:action="@{/visa-plan}">
+        <label>1년차 비자 만료일 <input type="date" name="visaExpiry" required th:value="${owner.visaExpiry}"></label>
+        <label>며칠 여유를 두고 끝낼까요? (버퍼 일수, 0 이상)
+            <input type="number" name="bufferDays" min="0" step="1" required th:value="${owner.bufferDays}"></label>
+        <button type="submit">저장</button>
+    </form>
+</section>
+
 <!-- 누적 결과 -->
 <section th:each="s : ${dashboard.summaries}">
     <h2 th:text="${s.visaYear} + '차 누적 (목표 ' + ${s.target()} + '달력일)'"></h2>

@@ -77,6 +77,17 @@ class LedgerControllerTest {
     }
 
     @Test
+    void visaPlan_savedAndPaceShown() throws Exception {
+        mvc.perform(post("/visa-plan").param("visaExpiry", "2099-01-01").param("bufferDays", "14"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attributeExists("message"));
+        mvc.perform(post("/visa-plan").param("visaExpiry", "2099-01-01").param("bufferDays", "-1"))
+                .andExpect(flash().attributeExists("error"));
+        mvc.perform(get("/ledger"))
+                .andExpect(content().string(containsString("일주일에 필요한 인정 일수")));
+    }
+
+    @Test
     void employmentPostWithValidDatesRedirectsWithMessage() throws Exception {
         mvc.perform(post("/employment")
                         .param("employer", "웹 테스트 농장")

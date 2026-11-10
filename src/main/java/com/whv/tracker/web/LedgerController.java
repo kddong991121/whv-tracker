@@ -1,5 +1,6 @@
 package com.whv.tracker.web;
 
+import com.whv.tracker.calc.PacePlan;
 import com.whv.tracker.eligibility.WorkType;
 import com.whv.tracker.ledger.DisasterWorkType;
 import com.whv.tracker.ledger.Industry;
@@ -52,7 +53,13 @@ public class LedgerController {
         if (owner == null) {
             return "redirect:/login";
         }
-        model.addAttribute("dashboard", ledger.dashboard(owner));
+        var dashboard = ledger.dashboard(owner);
+        model.addAttribute("dashboard", dashboard);
+        model.addAttribute("owner", owner);
+        if (owner.getVisaExpiry() != null && owner.getBufferDays() != null) {
+            model.addAttribute("pace", PacePlan.of(owner.getVisaExpiry(), owner.getBufferDays(), LocalDate.now(),
+                    dashboard.summaries().get(0)));
+        }
         model.addAttribute("industries", Industry.values());
         model.addAttribute("disasterTypes", DisasterWorkType.values());
         model.addAttribute("workTypes", WorkType.values());
@@ -111,6 +118,15 @@ public class LedgerController {
         warnIfFuture(redirect, workDate);
         return run(redirect, authentication, owner -> ledger.addWorkDay(owner, recordId, workDate, workHours),
                 "근무일을 저장했습니다.");
+    }
+
+    @PostMapping("/visa-plan")
+    public String saveVisaPlan(Authentication authentication,
+                               @RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate visaExpiry,
+                               @RequestParam Integer bufferDays,
+                               RedirectAttributes redirect) {
+        return run(redirect, authentication, owner -> users.updateVisaPlan(owner, visaExpiry, bufferDays),
+                "비자 만료일을 저장했습니다.");
     }
 
     /** 바인딩과 형식 오류 (날짜, enum, 숫자, 누락 파라미터)도 플래시 메시지로 돌려보낸다. */
