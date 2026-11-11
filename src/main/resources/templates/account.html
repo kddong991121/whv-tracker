@@ -18,6 +18,12 @@
         <p class="muted" style="margin:0"><a href="/ledger">전체 기록 보기·고치기</a> · <a href="/export">근무 이력 PDF</a> · <a href="/privacy">개인정보처리방침</a></p>
     </section>
 
+    <section class="card" th:if="${!#strings.isEmpty(feedbackUrl)}">
+        <h2>의견 보내기</h2>
+        <p class="muted" style="margin:0 0 12px">불편했던 점이나 있으면 좋겠는 기능을 알려주세요. Google 설문지가 새 창으로 열려요.</p>
+        <a class="btn" style="width:100%; background:#2E6B52" th:href="${feedbackUrl}" target="_blank" rel="noopener">의견 보내기</a>
+    </section>
+
     <section class="card" th:if="${user != null}">
         <h2 style="color:#B42318">탈퇴하기</h2>
         <p class="muted">계정과 모든 근무 기록, 페이슬립에서 읽은 값을 바로 지워요. <b>되돌릴 수 없어요.</b>

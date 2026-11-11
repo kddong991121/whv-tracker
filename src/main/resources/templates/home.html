@@ -83,7 +83,7 @@
     </section>
 
     <p class="muted" style="margin:16px 4px" th:text="${disclaimer}"></p>
-    <p class="muted" style="margin:0 4px"><a href="/privacy">개인정보처리방침</a></p>
+    <p class="muted" style="margin:0 4px"><a href="/privacy">개인정보처리방침</a><th:block th:if="${!#strings.isEmpty(feedbackUrl)}"> · <a th:href="${feedbackUrl}" target="_blank" rel="noopener">의견 보내기</a></th:block></p>
 </div>
 <a class="fab" href="/work">+ 근무 추가</a>
 <nav th:replace="~{fragments/ui :: nav('home')}"></nav>
