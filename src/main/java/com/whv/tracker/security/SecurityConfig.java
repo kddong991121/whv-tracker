@@ -22,7 +22,7 @@ public class SecurityConfig {
                                                    OAuth2LoginSuccessHandler loginSuccess,
                                                    ObjectProvider<DemoAuthFilter> demoAuth) throws Exception {
         http.authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/login", "/error", "/check").permitAll()
+                        .requestMatchers("/", "/login", "/error", "/check", "/privacy").permitAll()
                         // PWA 정적 파일 (아이콘, 설정, 서비스 워커, 연결 없음 화면)
                         .requestMatchers("/manifest.webmanifest", "/sw.js", "/offline.html", "/icons/**").permitAll()
                         .anyRequest().authenticated())

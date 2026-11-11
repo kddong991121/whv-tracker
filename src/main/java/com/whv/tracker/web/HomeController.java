@@ -35,10 +35,16 @@ public class HomeController {
 
     private final AppUserService users;
     private final LedgerService ledger;
+    private final com.whv.tracker.user.AccountDeletionService deletion;
+    private final String contactEmail;
 
-    public HomeController(AppUserService users, LedgerService ledger) {
+    public HomeController(AppUserService users, LedgerService ledger,
+                          com.whv.tracker.user.AccountDeletionService deletion,
+                          @org.springframework.beans.factory.annotation.Value("${whv.contact-email:}") String contactEmail) {
         this.users = users;
         this.ledger = ledger;
+        this.deletion = deletion;
+        this.contactEmail = contactEmail;
     }
 
     @GetMapping("/")
@@ -93,6 +99,32 @@ public class HomeController {
         model.addAttribute("user", user);
         model.addAttribute("disclaimer", DISCLAIMER);
         return "account";
+    }
+
+    /** 개인정보처리방침 (로그인 없이 공개). 문의 이메일은 서버 환경변수 WHV_CONTACT_EMAIL. */
+    @GetMapping("/privacy")
+    public String privacy(Model model) {
+        model.addAttribute("contactEmail", contactEmail);
+        return "privacy";
+    }
+
+    /** 회원 탈퇴: "탈퇴" 글자를 직접 입력해야 진행한다. 지운 뒤 로그아웃 처리한다. */
+    @org.springframework.web.bind.annotation.PostMapping("/account/delete")
+    public String deleteAccount(Authentication authentication, @RequestParam(defaultValue = "") String confirm,
+                                jakarta.servlet.http.HttpServletRequest request,
+                                org.springframework.web.servlet.mvc.support.RedirectAttributes redirect)
+            throws jakarta.servlet.ServletException {
+        AppUser user = users.findByGoogleSubject(authentication.getName());
+        if (user == null) {
+            return "redirect:/login";
+        }
+        if (!"탈퇴".equals(confirm.trim())) {
+            redirect.addFlashAttribute("error", "확인 칸에 \"탈퇴\"를 입력해야 지울 수 있어요.");
+            return "redirect:/account";
+        }
+        deletion.deleteAccount(user.getId());
+        request.logout();
+        return "redirect:/?deleted";
     }
 
     /** 달력 칸 (앞쪽 빈칸 포함). css: full / worked / short / future / blank, today는 별도 표시. */

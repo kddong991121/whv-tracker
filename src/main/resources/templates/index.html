@@ -16,7 +16,8 @@
     <th:block th:replace="~{fragments/pwa :: tags}"></th:block>
 </head>
 <body>
-<h1>whv-tracker</h1>
+<h1>워홀 88</h1>
+<section th:if="${param.deleted}"><p>탈퇴가 끝났어요. 계정과 모든 기록을 지웠어요.</p></section>
 
 <section>
     <p>워킹홀리데이 세컨·서드 비자 인정 근무 기록을 한곳에서 확인합니다.</p>
@@ -33,5 +34,6 @@
 </section>
 
 <p class="muted" th:text="${disclaimer}"></p>
+<p class="muted"><a href="/privacy">개인정보처리방침</a></p>
 </body>
 </html>
