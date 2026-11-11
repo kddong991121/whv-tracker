@@ -1,39 +1,40 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>whv-tracker</title>
-    <style>
-        :root { --ink:#1d2330; --muted:#5b6474; --line:#d9dee7; --bg:#f6f7f9; --card:#ffffff; --accent:#2f6fdb; }
-        body { margin:0; padding:16px; background:var(--bg); color:var(--ink); font-family:-apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif; line-height:1.5; }
-        section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:14px; }
-        h1 { font-size:20px; margin:0 0 12px; }
-        p { margin:6px 0; }
-        a.button, button { display:inline-block; font-size:16px; padding:10px 14px; border:0; border-radius:6px; background:var(--accent); color:#fff; text-decoration:none; cursor:pointer; }
-        .muted { font-size:13px; color:var(--muted); }
-    </style>
-    <th:block th:replace="~{fragments/pwa :: tags}"></th:block>
-</head>
+<head th:replace="~{fragments/ui :: head('워홀 88 - 세컨 비자 근무 카운터')}"></head>
 <body>
-<h1>워홀 88</h1>
-<section th:if="${param.deleted}"><p>탈퇴가 끝났어요. 계정과 모든 기록을 지웠어요.</p></section>
+<th:block th:replace="~{fragments/auth :: style}"></th:block>
+<div class="app" style="padding-bottom:40px">
+    <div class="flash ok" th:if="${param.deleted}">탈퇴가 끝났어요. 계정과 모든 기록을 지웠어요.</div>
 
-<section>
-    <p>워킹홀리데이 세컨·서드 비자 인정 근무 기록을 한곳에서 확인합니다.</p>
-    <p><a href="/check">내 일터가 세컨 인정 지역인지 확인하기 (로그인 없이)</a></p>
-    <p th:if="${!loggedIn}">
-        <a class="button" href="/login">구글로 로그인</a>
-    </p>
-    <div th:if="${loggedIn}">
-        <p><a class="button" href="/ledger">근무 기록</a> <a class="button" href="/account">내 계정</a></p>
-        <form method="post" th:action="@{/logout}">
-            <button type="submit">로그아웃</button>
-        </form>
+    <section class="hero">
+        <img class="logo" src="/icons/icon-192.png" alt="워홀 88">
+        <h1>세컨 비자 88일,<br>헷갈리지 않게</h1>
+        <p class="lead">호주 워킹홀리데이 인정 근무를 기록하면<br>남은 일수와 페이스를 바로 알려드려요.</p>
+    </section>
+
+    <section class="card preview" aria-label="화면 미리보기">
+        <span class="label">세컨 비자까지 30일 남았어요</span>
+        <div><span class="num">58일</span> <span style="font-size:18px; font-weight:700; color:#4E5968">/ 88일</span></div>
+        <div class="bar"><div style="width:66%; background:#2F6FEB"></div><div style="width:2%; background:repeating-linear-gradient(45deg,#F59E0B 0 3px,#FDE68A 3px 6px)"></div></div>
+        <p class="muted" style="margin:10px 0 0">예시 화면이에요</p>
+    </section>
+
+    <section class="card" style="margin-top:12px">
+        <div class="feat"><span class="ic">+</span><div><b>하루에 여러 곳 근무도 정확하게</b><span>오전 농장, 오후 포장처럼 나눠 기록하고 짧게 일한 날은 따로 알려줘요.</span></div></div>
+        <div class="feat"><span class="ic">⌖</span><div><b>세컨 인정 지역 바로 확인</b><span>포스트코드만 넣으면 호주 내무부 목록 기준으로 알려줘요.</span></div></div>
+        <div class="feat"><span class="ic">▤</span><div><b>페이슬립은 폰에서만 읽어요</b><span>날짜·시간만 저장하고 TFN·계좌번호가 있는 원본은 서버로 보내지 않아요.</span></div></div>
+    </section>
+
+    <div style="margin-top:20px" th:if="${!loggedIn}">
+        <a th:replace="~{fragments/auth :: google}"></a>
     </div>
-</section>
+    <div style="margin-top:20px" th:if="${loggedIn}">
+        <form method="post" th:action="@{/logout}"><button class="btn ghost" type="submit" style="width:100%">로그아웃</button></form>
+    </div>
+    <a class="ghost-link" href="/check">로그인 없이 인정 지역만 확인하기</a>
 
-<p class="muted" th:text="${disclaimer}"></p>
-<p class="muted"><a href="/privacy">개인정보처리방침</a></p>
+    <p class="muted" style="margin:24px 4px 4px; text-align:center" th:text="${disclaimer}"></p>
+    <p class="muted" style="margin:0; text-align:center"><a href="/privacy">개인정보처리방침</a></p>
+</div>
 </body>
 </html>

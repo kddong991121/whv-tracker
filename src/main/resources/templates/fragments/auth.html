@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<!-- 로그인 버튼과 소개 화면 전용 스타일 -->
+<th:block th:fragment="style">
+<style>
+    .hero { padding:48px 8px 8px; text-align:center; }
+    .logo { width:72px; height:72px; border-radius:20px; margin:0 auto 18px; display:block; box-shadow:0 8px 24px rgba(47,111,235,.25); }
+    .hero h1 { margin:0; font-size:28px; line-height:1.3; font-weight:800; letter-spacing:-.5px; }
+    .hero p.lead { margin:12px 0 0; font-size:15px; line-height:1.6; color:#4E5968; }
+    .google { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; height:54px; border-radius:14px;
+              background:#fff; border:1px solid #D1D6DB; color:#191F28; font-size:16px; font-weight:700; text-decoration:none;
+              box-shadow:0 1px 2px rgba(0,0,0,.04); }
+    .google:hover { background:#F9FAFB; }
+    .google .g { width:22px; height:22px; border-radius:11px; background:#2F6FEB; color:#fff; font-size:13px; font-weight:800;
+                 display:flex; align-items:center; justify-content:center; }
+    .ghost-link { display:flex; align-items:center; justify-content:center; height:50px; margin-top:10px; border-radius:14px;
+                  background:#E8F0FE; color:#1E40AF; font-weight:700; font-size:15px; text-decoration:none; }
+    .preview { text-align:left; }
+    .preview .num { font-size:44px; font-weight:800; color:#2F6FEB; letter-spacing:-1px; }
+    .preview .bar { height:12px; background:#E5E8EB; border-radius:6px; overflow:hidden; display:flex; margin-top:12px; }
+    .feat { display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-bottom:1px solid #F2F4F6; }
+    .feat:last-child { border-bottom:0; }
+    .feat .ic { width:36px; height:36px; flex-shrink:0; border-radius:10px; background:#E8F0FE; color:#2F6FEB;
+                display:flex; align-items:center; justify-content:center; font-weight:800; }
+    .feat b { display:block; font-size:15px; } .feat span { font-size:13px; color:#4E5968; line-height:1.5; }
+</style>
+</th:block>
+
+<!-- 구글 로그인 버튼 (구글 로고 대신 G 글자 표시) -->
+<a th:fragment="google" class="google" href="/oauth2/authorization/google"><span class="g" aria-hidden="true">G</span>Google 계정으로 시작하기</a>
+</html>

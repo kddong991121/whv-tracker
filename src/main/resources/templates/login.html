@@ -1,30 +1,21 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>로그인 - whv-tracker</title>
-    <style>
-        :root { --ink:#1d2330; --muted:#5b6474; --line:#d9dee7; --bg:#f6f7f9; --card:#ffffff; --accent:#2f6fdb; --err:#b42318; --err-bg:#fdecea; }
-        body { margin:0; padding:16px; background:var(--bg); color:var(--ink); font-family:-apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif; line-height:1.5; }
-        section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:14px; }
-        h1 { font-size:20px; margin:0 0 12px; }
-        a.button { display:inline-block; font-size:16px; padding:10px 14px; border-radius:6px; background:var(--accent); color:#fff; text-decoration:none; }
-        .flash { padding:10px 12px; border-radius:8px; margin-bottom:14px; font-size:14px; background:var(--err-bg); color:var(--err); }
-        .muted { font-size:13px; color:var(--muted); }
-    </style>
-    <th:block th:replace="~{fragments/pwa :: tags}"></th:block>
-</head>
+<head th:replace="~{fragments/ui :: head('워홀 88 - 로그인')}"></head>
 <body>
-<h1>로그인</h1>
+<th:block th:replace="~{fragments/auth :: style}"></th:block>
+<div class="app" style="padding-bottom:40px">
+    <section class="hero">
+        <img class="logo" src="/icons/icon-192.png" alt="워홀 88">
+        <h1>로그인</h1>
+        <p class="lead">구글 계정으로 바로 시작해요.<br>비밀번호는 이 서비스에 저장하지 않아요.</p>
+    </section>
 
-<div th:if="${error == 'account'}" class="flash">구글 계정 정보를 확인하지 못했습니다. 이메일 권한을 허용하고 다시 시도하세요.</div>
-<div th:if="${error != null and error != 'account'}" class="flash">로그인에 실패했습니다. 다시 시도하세요.</div>
+    <div class="flash err" th:if="${error == 'account'}">구글 계정 정보를 확인하지 못했어요. 이메일 권한을 허용하고 다시 시도해 주세요.</div>
+    <div class="flash err" th:if="${error != null and error != 'account'}">로그인에 실패했어요. 다시 시도해 주세요.</div>
 
-<section>
-    <p>구글 계정으로 로그인합니다. 이메일이나 비밀번호는 이 서비스에 저장하지 않습니다.</p>
-    <p><a class="button" href="/oauth2/authorization/google">구글로 로그인</a></p>
-    <p class="muted">로그인하면 <a href="/privacy">개인정보처리방침</a>에 동의한 것으로 봅니다.</p>
-</section>
+    <div style="margin-top:24px"><a th:replace="~{fragments/auth :: google}"></a></div>
+    <p class="muted" style="text-align:center; margin-top:14px">로그인하면 <a href="/privacy">개인정보처리방침</a>에 동의한 것으로 봐요.</p>
+    <p class="muted" style="text-align:center; margin-top:24px"><a href="/">처음으로</a></p>
+</div>
 </body>
 </html>
