@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<!-- 공통 스타일과 하단 메뉴. 시안(docs/design/) 색: 강조 #2F6FEB, 배경 #F2F4F6, 흰 카드. -->
+<!-- 공통 스타일과 하단 메뉴. 색: 강조(일수·버튼) #2F6FEB, 배경은 호주 모래색 #F6F2EA, 보조색 유칼립투스 녹색 #2E6B52(메뉴·제목 표시), 흰 카드. -->
 <head th:fragment="head(title)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,11 +10,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing:border-box; }
-        body { margin:0; background:#F2F4F6; color:#191F28; font-family:'Noto Sans KR','Malgun Gothic',sans-serif; }
+        body { margin:0; background:#F6F2EA; color:#191F28; font-family:'Noto Sans KR','Malgun Gothic',sans-serif; }
         .app { max-width:480px; margin:0 auto; padding:0 16px 120px; }
         a { color:#2F6FEB; }
         header.top { padding:24px 4px 8px; display:flex; justify-content:space-between; align-items:center; }
-        header.top .sub { font-size:13px; color:#4E5968; }
+        header.top .sub { font-size:13px; color:#2E6B52; font-weight:500; }
         header.top h1 { margin:0; font-size:22px; font-weight:800; }
         .icon-btn { width:44px; height:44px; border-radius:12px; background:#fff; display:flex; align-items:center; justify-content:center; text-decoration:none; color:#4E5968; font-size:20px; }
         .card { background:#fff; border-radius:20px; padding:20px; margin-top:12px; }
@@ -35,9 +35,11 @@
         .badge.sure { background:#E8F0FE; color:#1E40AF; } .badge.short { background:#FEF3C7; color:#78350F; } .badge.off { background:#F2F4F6; color:#4E5968; }
         .dot { width:10px; height:10px; border-radius:5px; display:inline-block; flex-shrink:0; }
         .row { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-        nav.tabs { position:fixed; left:0; right:0; bottom:0; height:68px; background:#fff; border-top:1px solid #E5E8EB; display:grid; grid-template-columns:repeat(4,1fr); }
+        nav.tabs { position:fixed; left:0; right:0; bottom:0; height:68px; z-index:10; background:#fff; border-top:1px solid #E5E8EB; display:grid; grid-template-columns:repeat(4,1fr); }
         nav.tabs a { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-size:12px; color:#4E5968; text-decoration:none; }
-        nav.tabs a.on { color:#191F28; font-weight:700; }
+        nav.tabs a { position:relative; }
+        nav.tabs a.on { color:#2E6B52; font-weight:700; }
+        nav.tabs a.on::before { content:''; position:absolute; top:0; left:30%; right:30%; height:3px; border-radius:0 0 3px 3px; background:#2E6B52; }
         nav.tabs span.i { font-size:20px; line-height:1; }
         .fab { position:fixed; right:max(16px, calc(50% - 224px)); bottom:84px; height:52px; padding:0 20px; border-radius:26px; background:#2F6FEB; color:#fff; font-weight:700; text-decoration:none; display:flex; align-items:center; box-shadow:0 4px 12px rgba(47,111,235,.3); }
     </style>

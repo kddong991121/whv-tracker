@@ -7,6 +7,7 @@ import com.whv.tracker.ledger.Industry;
 import java.time.LocalDate;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.format.annotation.DateTimeFormat.ISO;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,7 +32,10 @@ public class CheckController {
                         @RequestParam(required = false) WorkType workType,
                         @RequestParam(required = false) DisasterWorkType disasterWorkType,
                         @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE) LocalDate lodgeDate,
+                        Authentication authentication,
                         Model model) {
+        // 로그인한 사용자에게만 하단 메뉴를 보여준다 (다른 탭은 로그인이 필요해서).
+        model.addAttribute("loggedIn", HomeController.isLoggedIn(authentication));
         model.addAttribute("industries", Industry.values());
         model.addAttribute("workTypes", WorkType.values());
         model.addAttribute("disasterTypes", DisasterWorkType.values());

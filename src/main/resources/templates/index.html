@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/ui :: head('워홀 88 - 세컨 비자 근무 카운터')}"></head>
-<body>
+<body class="sunset">
 <th:block th:replace="~{fragments/auth :: style}"></th:block>
 <div class="app" style="padding-bottom:40px">
     <div class="flash ok" th:if="${param.deleted}">탈퇴가 끝났어요. 계정과 모든 기록을 지웠어요.</div>
@@ -12,7 +12,16 @@
         <p class="lead">호주 워킹홀리데이 인정 근무를 기록하면<br>남은 일수와 페이스를 바로 알려드려요.</p>
     </section>
 
-    <section class="card preview" aria-label="화면 미리보기">
+    <!-- 시작 버튼은 모바일 첫 화면(높이 약 700px) 안에 보이도록 소개 문장 바로 아래에 둔다 -->
+    <div style="margin-top:24px" th:if="${!loggedIn}">
+        <a th:replace="~{fragments/auth :: google}"></a>
+    </div>
+    <div style="margin-top:20px" th:if="${loggedIn}">
+        <form method="post" th:action="@{/logout}"><button class="btn ghost" type="submit" style="width:100%">로그아웃</button></form>
+    </div>
+    <a class="ghost-link" href="/check">로그인 없이 인정 지역만 확인하기</a>
+
+    <section class="card preview" style="margin-top:24px" aria-label="화면 미리보기">
         <span class="label">세컨 비자까지 30일 남았어요</span>
         <div><span class="num">58일</span> <span style="font-size:18px; font-weight:700; color:#4E5968">/ 88일</span></div>
         <div class="bar"><div style="width:66%; background:#2F6FEB"></div><div style="width:2%; background:repeating-linear-gradient(45deg,#F59E0B 0 3px,#FDE68A 3px 6px)"></div></div>
@@ -25,13 +34,7 @@
         <div class="feat"><span class="ic">▤</span><div><b>페이슬립은 폰에서만 읽어요</b><span>날짜·시간만 저장하고 TFN·계좌번호가 있는 원본은 서버로 보내지 않아요.</span></div></div>
     </section>
 
-    <div style="margin-top:20px" th:if="${!loggedIn}">
-        <a th:replace="~{fragments/auth :: google}"></a>
-    </div>
-    <div style="margin-top:20px" th:if="${loggedIn}">
-        <form method="post" th:action="@{/logout}"><button class="btn ghost" type="submit" style="width:100%">로그아웃</button></form>
-    </div>
-    <a class="ghost-link" href="/check">로그인 없이 인정 지역만 확인하기</a>
+
 
     <p class="muted" style="margin:24px 4px 4px; text-align:center" th:text="${disclaimer}"></p>
     <p class="muted" style="margin:0; text-align:center"><a href="/privacy">개인정보처리방침</a></p>

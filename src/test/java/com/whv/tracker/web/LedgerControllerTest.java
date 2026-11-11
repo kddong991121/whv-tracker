@@ -71,7 +71,7 @@ class LedgerControllerTest {
         mvc.perform(get("/ledger"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(LedgerController.DISCLAIMER)))
-                .andExpect(content().string(containsString("모드 A: 풀타임")))
+                .andExpect(content().string(containsString("매일 출근한 정규 근무")))
                 .andExpect(content().string(containsString("렌더 카페")))
                 .andExpect(content().string(containsString("2027-01-05")));
     }

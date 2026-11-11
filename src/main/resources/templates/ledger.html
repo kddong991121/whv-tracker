@@ -1,48 +1,33 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>근무 기록 - whv-tracker</title>
-    <style>
-        :root { --ink:#1d2330; --muted:#5b6474; --line:#d9dee7; --bg:#f6f7f9; --card:#ffffff; --accent:#2f6fdb; --warn:#9a5b00; --warn-bg:#fff6e5; --ok:#1d7a46; --err:#b42318; --err-bg:#fdecea; }
-        * { box-sizing: border-box; }
-        body { margin:0; padding:16px; background:var(--bg); color:var(--ink); font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; line-height:1.5; font-size:15px; }
-        h1 { font-size:20px; margin:0 0 12px; }
-        h2 { font-size:17px; margin:0 0 10px; }
-        h3 { font-size:15px; margin:14px 0 6px; }
-        section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:14px; }
-        form { display:grid; gap:8px; }
-        label { display:grid; gap:4px; font-size:14px; color:var(--muted); }
-        input, select { font-size:16px; padding:8px; border:1px solid var(--line); border-radius:6px; width:100%; background:#fff; color:var(--ink); }
-        button { font-size:16px; padding:10px; border:0; border-radius:6px; background:var(--accent); color:#fff; cursor:pointer; }
-        .hint { font-size:12px; color:var(--muted); }
-        .flash { padding:10px 12px; border-radius:8px; margin-bottom:14px; font-size:14px; }
-        .flash.ok { background:#e8f6ee; color:var(--ok); }
-        .flash.err { background:var(--err-bg); color:var(--err); }
-        .flash.warn { background:var(--warn-bg); color:var(--warn); }
-        .card { border:1px solid var(--line); border-radius:8px; padding:12px; margin-top:10px; }
-        .big { font-size:24px; font-weight:700; }
-        .row { display:flex; justify-content:space-between; gap:8px; font-size:14px; padding:3px 0; }
-        .bar { height:10px; background:#e7ebf2; border-radius:6px; overflow:hidden; margin:8px 0; }
-        .bar > span { display:block; height:100%; background:var(--accent); }
-        .status { font-weight:700; margin:6px 0; }
-        .status.ok { color:var(--ok); }
-        .status.warn { color:var(--warn); }
-        .warn-list { background:var(--warn-bg); color:var(--warn); border-radius:8px; padding:8px 12px; font-size:13px; margin:8px 0 0; }
-        .warn-list li { margin:2px 0; }
-        .disclaimer { font-size:13px; color:var(--warn); background:var(--warn-bg); border-radius:8px; padding:10px 12px; margin-top:12px; }
-        .meta { font-size:12px; color:var(--muted); margin-top:8px; }
-        table { width:100%; border-collapse:collapse; font-size:13px; }
-        th, td { text-align:left; padding:6px 4px; border-bottom:1px solid var(--line); vertical-align:top; }
-        .sub { font-size:13px; color:var(--muted); margin:4px 0 8px; }
-        @media (min-width: 720px) { body { max-width:720px; margin:0 auto; } }
-    </style>
-    <th:block th:replace="~{fragments/pwa :: tags}"></th:block>
-</head>
+<head th:replace="~{fragments/ui :: head('워홀 88 - 전체 기록')}"></head>
 <body>
-<h1>근무 기록</h1>
-<p class="sub"><a href="/">홈으로</a></p>
+<!-- 공통 스타일(fragments/ui) 위에 이 화면에만 필요한 모양을 더한다 -->
+<style>
+    section { background:#fff; border-radius:20px; padding:20px; margin-top:12px; }
+    section h2 { margin:0 0 12px; font-size:17px; font-weight:700; }
+    form { display:grid; gap:8px; }
+    form label { display:grid; gap:4px; font-size:13px; color:#4E5968; }
+    form label.check { display:flex; align-items:flex-start; gap:8px; }
+    input[type=checkbox] { width:20px; height:20px; flex-shrink:0; margin:0; }
+    form button { height:48px; border:0; border-radius:14px; background:#2F6FEB; color:#fff; font-size:16px; font-weight:700; font-family:inherit; cursor:pointer; }
+    .rec { border:1px solid #EFEAE0; border-radius:14px; padding:14px; margin-top:10px; }
+    .row { font-size:14px; padding:3px 0; }
+    .big { font-size:28px; font-weight:800; color:#2F6FEB; }
+    .bar { height:10px; background:#E5E8EB; border-radius:6px; overflow:hidden; margin:8px 0; }
+    .bar > span { display:block; height:100%; background:#2F6FEB; }
+    .status { font-weight:700; margin:6px 0; font-size:14px; }
+    .status.ok { color:#14663C; } .status.warn { color:#92400E; }
+    .flash.warn { background:#FEF3C7; color:#78350F; }
+    .warn-list { background:#FEF3C7; color:#78350F; border-radius:12px; padding:8px 12px 8px 28px; font-size:13px; margin:8px 0 0; }
+    .disclaimer { font-size:13px; color:#78350F; background:#FEF3C7; border-radius:12px; padding:10px 12px; margin-top:12px; }
+    .meta, .hint { font-size:12px; color:#4E5968; line-height:1.6; }
+    .sub { font-size:13px; color:#4E5968; margin:4px 0 8px; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th, td { text-align:left; padding:6px 4px; border-bottom:1px solid #EFEAE0; vertical-align:top; }
+</style>
+<div class="app">
+<header class="top"><div><div class="sub" style="margin:0">기간으로 넣는 정규 근무와 모든 기록</div><h1>전체 기록</h1></div></header>
 
 <div th:if="${message}" class="flash ok" th:text="${message}"></div>
 <div th:if="${error}" class="flash err" th:text="${error}"></div>
@@ -65,7 +50,7 @@
     </div>
     <form method="post" th:action="@{/visa-plan}">
         <label>1년차 비자 만료일 <input type="date" name="visaExpiry" required th:value="${owner.visaExpiry}"></label>
-        <label>며칠 여유를 두고 끝낼까요? (버퍼 일수, 0 이상)
+        <label>며칠 여유를 두고 끝낼까요? (0 이상)
             <input type="number" name="bufferDays" min="0" step="1" required th:value="${owner.bufferDays}"></label>
         <button type="submit">저장</button>
     </form>
@@ -73,21 +58,20 @@
 
 <!-- 누적 결과 -->
 <section th:each="s : ${dashboard.summaries}">
-    <h2 th:text="${s.visaYear} + '차 누적 (목표 ' + ${s.target()} + '달력일)'"></h2>
+    <h2 th:text="(${s.visaYear} == 2 ? '세컨' : '서드') + ' 비자 누적 (목표 ' + ${s.target()} + '일)'"></h2>
     <div class="big"><span th:text="${s.displayDays()}"></span>일 / <span th:text="${s.target()}"></span>일</div>
     <div class="row"><span>짧게 일한 날 (인정 안 될 수도 있어요, 위 숫자에 넣지 않음)</span><span th:text="${s.shortDays()} + ' 일'"></span></div>
-    <div class="row"><span>모드 A 달력일</span><span th:text="${s.employmentDays()} + ' 일'"></span></div>
-    <div class="row"><span>모드 B 환산 일수</span><span th:text="${s.casualConvertedText()} + ' 일'"></span></div>
-    <div class="row"><span>중복 제거 전 원시 합계</span><span th:text="${s.rawTotalText()}"></span></div>
-    <div class="row"><span>인정일 span (첫날~마지막날)</span><span th:text="${s.span()} + ' 일'"></span></div>
+    <div class="row"><span>매일 출근한 기간</span><span th:text="${s.employmentDays()} + ' 일'"></span></div>
+    <div class="row"><span>날짜별 근무로 센 일수</span><span th:text="${s.casualConvertedText()} + ' 일'"></span></div>
+    <div class="row"><span>겹치는 날 빼기 전 합계</span><span th:text="${s.rawTotalText()}"></span></div>
+    <div class="row"><span>첫 근무일부터 마지막 근무일까지</span><span th:text="${s.span()} + ' 일'"></span></div>
 
     <div class="bar"><span th:style="'width:' + ${s.barPercent()} + '%'"></span></div>
-    <div class="row"><span>게이지</span><span th:text="${s.percentText()} + '%'"></span></div>
+    <div class="row"><span>진행률</span><span th:text="${s.percentText()} + '%'"></span></div>
 
-    <p class="status ok" th:if="${s.eligible()}">요건 충족 가능 (합계와 기간 모두 충족)</p>
-    <p class="status warn" th:unless="${s.eligible()}" th:text="${s.targetMet()} ? '합계는 목표 이상이나 기간(span) 부족으로 요건 충족 불가' : '목표 미달 (목표 ' + ${s.target()} + '일)'"></p>
-    <p class="status ok" th:if="${s.targetMet()}">목표 달성</p>
-
+    <p class="status ok" th:if="${s.eligible()}">일수와 기간을 모두 채웠어요</p>
+    <p class="status warn" th:unless="${s.eligible()}" th:text="${s.targetMet()} ? '일수는 채웠지만 첫날부터 마지막 날까지 기간이 아직 짧아요' : '아직 목표 전이에요 (목표 ' + ${s.target()} + '일)'"></p>
+    
     <ul class="warn-list" th:if="${!s.warnings().isEmpty()}">
         <li th:each="w : ${s.warnings()}" th:text="${w}"></li>
     </ul>
@@ -104,23 +88,23 @@
 
 <!-- 고용 기록 입력 -->
 <section>
-    <h2>모드 A: 풀타임 연속 고용 (기간 1건)</h2>
-    <p class="sub">주말·유급 공휴일·유급 병가는 기간 달력일에 자동 포함됩니다. 무급 날씨 휴무 일수만 차감합니다.</p>
+    <h2>매일 출근한 정규 근무 (기간으로 넣기)</h2>
+    <p class="sub">주말·유급 공휴일·유급 병가는 기간에 자동으로 들어가요. 무급으로 쉰 날씨 휴무만 빼요.</p>
     <form method="post" th:action="@{/employment}">
-        <label>고용주명 <input name="employer" required maxlength="100"></label>
-        <label>포스트코드 (4자리) <input name="postcode" required pattern="[0-9]{4}" inputmode="numeric"></label>
+        <label>일터 이름 <input name="employer" required maxlength="100"></label>
+        <label>포스트코드 (숫자 4자리) <input name="postcode" required pattern="[0-9]{4}" inputmode="numeric"></label>
         <label>업종
             <select name="industry">
-                <option th:each="i : ${industries}" th:value="${i.name()}" th:text="${i.name()}"></option>
+                <option th:each="i : ${industries}" th:value="${i.name()}" th:text="${i.label()}"></option>
             </select>
         </label>
-        <label>귀속 차수
-            <select name="visaYear"><option value="2">2차</option><option value="3">3차</option></select>
+        <label>어느 비자에 넣을까요?
+            <select name="visaYear"><option value="2">세컨 비자</option><option value="3">서드 비자</option></select>
         </label>
-        <label>재해 복구 유형 (재해 복구 업종일 때만. 미선택이면 조건부로 인정 합계에서 제외)
+        <label>재해 복구면 유급/봉사 (안 고르면 합계에 넣지 않아요)
             <select name="disasterWorkType">
                 <option value="">선택 안 함</option>
-                <option th:each="t : ${disasterTypes}" th:value="${t.name()}" th:text="${t.name()}"></option>
+                <option th:each="t : ${disasterTypes}" th:value="${t.name()}" th:text="${t.label()}"></option>
             </select>
         </label>
         <label>농장 일이면 작업 종류 (가공품 제조·정원 관리는 인정 업무가 아니에요)
@@ -129,35 +113,35 @@
                 <option th:each="w : ${workTypes}" th:value="${w.name()}" th:text="${w.label()}"></option>
             </select>
         </label>
-        <label><input type="checkbox" name="conditionConfirmed" value="true">
+        <label class="check"><input type="checkbox" name="conditionConfirmed" value="true">
             '조건을 확인해야 해요'로 나오면, 조건을 충족했어요 (체크해야 합계에 넣어요)</label>
         <label>시작일 <input type="date" name="startDate" required></label>
         <label>종료일 <input type="date" name="endDate" required></label>
         <label>무급 날씨 휴무 일수 (선택, 0 이상)
             <input type="number" name="unpaidWeatherDays" min="0" value="0">
         </label>
-        <button type="submit">모드 A 기간 저장</button>
+        <button type="submit">기간 저장</button>
     </form>
 </section>
 
 <section>
-    <h2>모드 B: 파트타임·캐주얼·피스레이트 (고용 기간 + 근무일)</h2>
-    <p class="sub">고용 기간을 먼저 저장한 뒤, 아래 목록에서 실제 근무한 날짜를 하루씩 추가합니다. 환산 = 근무일 × 7 ÷ W.</p>
+    <h2>날짜별로 일한 근무 (파트타임·캐주얼·성과급)</h2>
+    <p class="sub">일터와 기간을 먼저 저장한 뒤, 아래 목록에서 일한 날짜를 하루씩 넣어요. 주 5일 일하면 7일로 쳐줘요. 날짜별 입력은 근무 기록 화면이 더 편해요.</p>
     <form method="post" th:action="@{/casual}">
-        <label>고용주명 <input name="employer" required maxlength="100"></label>
-        <label>포스트코드 (4자리) <input name="postcode" required pattern="[0-9]{4}" inputmode="numeric"></label>
+        <label>일터 이름 <input name="employer" required maxlength="100"></label>
+        <label>포스트코드 (숫자 4자리) <input name="postcode" required pattern="[0-9]{4}" inputmode="numeric"></label>
         <label>업종
             <select name="industry">
-                <option th:each="i : ${industries}" th:value="${i.name()}" th:text="${i.name()}"></option>
+                <option th:each="i : ${industries}" th:value="${i.name()}" th:text="${i.label()}"></option>
             </select>
         </label>
-        <label>귀속 차수
-            <select name="visaYear"><option value="2">2차</option><option value="3">3차</option></select>
+        <label>어느 비자에 넣을까요?
+            <select name="visaYear"><option value="2">세컨 비자</option><option value="3">서드 비자</option></select>
         </label>
-        <label>재해 복구 유형 (재해 복구 업종일 때만. 미선택이면 조건부로 인정 합계에서 제외)
+        <label>재해 복구면 유급/봉사 (안 고르면 합계에 넣지 않아요)
             <select name="disasterWorkType">
                 <option value="">선택 안 함</option>
-                <option th:each="t : ${disasterTypes}" th:value="${t.name()}" th:text="${t.name()}"></option>
+                <option th:each="t : ${disasterTypes}" th:value="${t.name()}" th:text="${t.label()}"></option>
             </select>
         </label>
         <label>농장 일이면 작업 종류 (가공품 제조·정원 관리는 인정 업무가 아니에요)
@@ -166,44 +150,44 @@
                 <option th:each="w : ${workTypes}" th:value="${w.name()}" th:text="${w.label()}"></option>
             </select>
         </label>
-        <label><input type="checkbox" name="conditionConfirmed" value="true">
+        <label class="check"><input type="checkbox" name="conditionConfirmed" value="true">
             '조건을 확인해야 해요'로 나오면, 조건을 충족했어요 (체크해야 합계에 넣어요)</label>
         <label>시작일 <input type="date" name="startDate" required></label>
         <label>종료일 <input type="date" name="endDate" required></label>
         <label>평소 하루 근무 시간 (이보다 짧게 일한 날은 '짧게 일한 날'로 따로 셉니다)
             <input type="number" name="normalHours" step="0.01" min="0.01" max="24" value="8" required>
         </label>
-        <label>기준 주당 정상 근무일 W (1~7, 기본 5)
+        <label>일주일에 보통 며칠 일하나요? (1~7, 보통 5)
             <input type="number" name="standardDays" min="1" max="7" value="5" required>
         </label>
-        <label>W 변경 사유 (W가 5가 아닐 때 필수, 255자 이내)
+        <label>5일이 아니면 그 이유 (필수, 255자 이내)
             <input name="standardReason" maxlength="255" placeholder="업종 표준 근거 등">
         </label>
         <label>근거 출처 (선택, 255자 이내)
             <input name="standardSource" maxlength="255" placeholder="예: 업종 표준 근무일 문서 이름과 날짜">
         </label>
-        <button type="submit">모드 B 고용 기간 저장</button>
+        <button type="submit">일터 저장</button>
     </form>
 </section>
 
 <!-- 기록 목록 -->
 <section>
     <h2>저장된 기록</h2>
-    <p class="sub" th:if="${dashboard.records.isEmpty()}">아직 기록이 없습니다.</p>
-    <div class="card" th:each="r : ${dashboard.records}">
+    <p class="sub" th:if="${dashboard.records.isEmpty()}">아직 기록이 없어요.</p>
+    <div class="rec" th:each="r : ${dashboard.records}">
         <div class="row">
             <strong th:text="${r.employerName}"></strong>
-            <span th:text="${r.visaYear} + '차'"></span>
+            <span th:text="${r.visaYear} == 2 ? '세컨' : '서드'"></span>
         </div>
         <div class="sub">
-            <span th:text="${r.mode.name() == 'EMPLOYMENT_PERIOD'} ? '모드 A (달력일)' : '모드 B (환산)'"></span>
+            <span th:text="${r.mode.name() == 'EMPLOYMENT_PERIOD'} ? '매일 출근 (기간)' : '날짜별 근무'"></span>
             · <span th:text="${r.startDate} + ' ~ ' + ${r.endDate}"></span>
             · 포스트코드 <span th:text="${r.postcode}"></span>
-            · <span th:text="${r.industry.name()}"></span>
+            · <span th:text="${r.industry.label()}"></span>
             <span th:if="${r.mode.name() == 'EMPLOYMENT_PERIOD'}">· 무급 휴무 <span th:text="${r.unpaidWeatherDays}"></span>일</span>
-            <span th:if="${r.mode.name() == 'CASUAL_DAYS'}">· W=<span th:text="${r.standardDays}"></span>
+            <span th:if="${r.mode.name() == 'CASUAL_DAYS'}">· 주 <span th:text="${r.standardDays}"></span>일 근무
                 · 평소 하루 <span th:text="${r.normalHours}"></span>시간</span>
-            <span th:if="${r.industry.name() == 'NATURAL_DISASTER_RECOVERY'}" th:text="${r.disasterWorkType == null} ? '· 재해 복구 (유형 미선택, 조건부로 인정 합계 제외)' : ('· 재해 복구 (' + ${r.disasterWorkType.name()} + ')')"></span>
+            <span th:if="${r.industry.name() == 'NATURAL_DISASTER_RECOVERY'}" th:text="${r.disasterWorkType == null} ? '· 재해 복구 (유급/봉사 안 고름, 합계에 넣지 않음)' : ('· 재해 복구 (' + ${r.disasterWorkType.label()} + ')')"></span>
         </div>
 
         <p th:with="st=${dashboard.statusByRecord[r.id]}, counted=${dashboard.countedByRecord[r.id]}"
@@ -212,7 +196,7 @@
 
         <div th:if="${r.mode.name() == 'CASUAL_DAYS'}">
             <table th:if="${dashboard.daysByRecord[r.id] != null}">
-                <thead><tr><th>근무일</th><th>근무시간</th><th>W 스냅샷</th></tr></thead>
+                <thead><tr><th>근무일</th><th>근무시간</th><th>주 근무일</th></tr></thead>
                 <tbody>
                 <tr th:each="d : ${dashboard.daysByRecord[r.id]}">
                     <td th:text="${d.workDate}"></td>
@@ -222,7 +206,7 @@
                 </tbody>
             </table>
             <form method="post" th:action="@{/casual/{id}/days(id=${r.id})}">
-                <p class="hint">같은 날 다른 일터에서도 일했다면 그 일터 기록에 따로 추가하세요. 같은 날짜는 1일을 넘지 않습니다.</p>
+                <p class="hint">같은 날 다른 일터에서도 일했다면 그 일터 기록에 따로 추가하세요. 같은 날짜는 1일을 넘지 않아요.</p>
                 <label>근무 날짜 <input type="date" name="workDate" required></label>
                 <label>근무 시간 (0 초과 24 이하, 재해 복구 봉사는 생략 가능)
                     <input type="number" name="workHours" step="0.01" min="0.01" max="24">
@@ -233,6 +217,7 @@
     </div>
 </section>
 
-<p class="meta">서버는 127.0.0.1에서만 실행됩니다. 로컬 전용이며 배포하지 않습니다.</p>
+</div>
+<nav th:replace="~{fragments/ui :: nav('work')}"></nav>
 </body>
 </html>

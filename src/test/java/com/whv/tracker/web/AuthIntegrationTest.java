@@ -55,7 +55,10 @@ class AuthIntegrationTest {
     void checkPage_isPublic_andShowsResult() throws Exception {
         mvc.perform(get("/check").param("postcode", "4870").param("industry", "REGIONAL_PRIMARY_MINING_CONSTRUCTION"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("세컨 인정 지역이에요")));
+                .andExpect(content().string(containsString("세컨 인정 지역이에요")))
+                // 로그인 전에는 하단 메뉴 대신 '처음으로' 링크만 보인다 (다른 탭은 로그인이 필요해서)
+                .andExpect(content().string(not(containsString("aria-label=\"하단 메뉴\""))))
+                .andExpect(content().string(containsString("처음으로")));
     }
 
     @Test

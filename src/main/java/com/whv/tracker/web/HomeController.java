@@ -177,7 +177,8 @@ public class HomeController {
         return d.getMonthValue() + "월 " + d.getDayOfMonth() + "일";
     }
 
-    private static boolean isLoggedIn(Authentication authentication) {
+    /** 구글 로그인을 한 사용자인지. 익명 사용자는 false. CheckController도 하단 메뉴 표시에 쓴다. */
+    static boolean isLoggedIn(Authentication authentication) {
         return authentication != null && authentication.isAuthenticated()
                 && !(authentication instanceof org.springframework.security.authentication.AnonymousAuthenticationToken);
     }

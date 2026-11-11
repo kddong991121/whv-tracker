@@ -222,7 +222,7 @@ class WorkCalculatorTest {
         VisaSummary s = WorkCalculator.summarize(2, List.of(disaster), List.of());
 
         assertThat(s.employmentDays()).isZero();
-        assertThat(s.warnings()).anyMatch(w -> w.contains("재해 복구"));
+        assertThat(s.warnings()).anyMatch(w -> w.contains("합계에서 뺐습니다"));
     }
 
     @Test

@@ -3,24 +3,81 @@
 <head th:replace="~{fragments/ui :: head('워홀 88 - 근무 기록')}"></head>
 <body>
 <style>
-    .day { padding:14px 0; border-bottom:1px solid #F2F4F6; }
+    .day { padding:10px 0; border-bottom:1px solid #F2F4F6; }
+    .day:last-child { border-bottom:0; }
+    /* 날짜 줄 전체가 '+ 근무' 버튼 역할. 누르면 그 날 입력 칸이 열린다. */
+    .day > details > summary { list-style:none; cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:8px; min-height:36px; }
+    .day > details > summary::-webkit-details-marker { display:none; }
+    .add-pill { font-size:13px; color:#4E5968; border:1px dashed #B0B8C1; border-radius:10px; padding:5px 10px; white-space:nowrap; }
+    .day > details[open] .add-pill { border-style:solid; color:#191F28; }
+    .places > summary { list-style:none; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+    .places > summary::-webkit-details-marker { display:none; }
+    .places > summary .chev { color:#4E5968; font-size:13px; }
     .shift { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:8px; font-size:14px; }
     .shift form { margin:0; }
     .x { width:36px; height:36px; border:0; border-radius:10px; background:#F2F4F6; color:#4E5968; font-size:16px; cursor:pointer; }
-    details summary { cursor:pointer; font-size:13px; color:#4E5968; margin-top:8px; list-style:none; display:inline-block;
+    .addplace summary { cursor:pointer; font-size:13px; color:#4E5968; margin-top:8px; list-style:none; display:inline-block;
         border:1px dashed #B0B8C1; border-radius:10px; padding:6px 12px; }
     .addrow { display:grid; grid-template-columns:1fr 90px 80px; gap:6px; margin-top:8px; }
     .addrow .btn { height:44px; font-size:14px; padding:0; }
-    .sum { display:grid; grid-template-columns:repeat(3,1fr); text-align:center; }
+    .sum { display:grid; grid-template-columns:repeat(3,1fr); text-align:center; padding:16px 12px; }
     .sum b { display:block; font-size:20px; font-weight:800; }
 </style>
 <div class="app">
-    <header class="top"><div><div class="sub">날짜마다 여러 곳 근무를 넣을 수 있어요</div><h1>근무 기록</h1></div></header>
+    <header class="top"><div><div class="sub">날짜를 누르면 근무를 넣을 수 있어요</div><h1>근무 기록</h1></div></header>
     <div class="flash ok" th:if="${message}" th:text="${message}"></div>
     <div class="flash err" th:if="${error}" th:text="${error}"></div>
 
+    <!-- 이번 주 합계를 맨 위에, 그다음 날짜별 기록, 일터 목록은 접어서 아래에 둔다 -->
+    <section class="card sum">
+        <div><span class="label">일한 날</span><b th:text="${worked} + '일'"></b></div>
+        <div><span class="label">인정</span><b style="color:#2F6FEB" th:text="${sure} + '일'"></b></div>
+        <div><span class="label">짧게 일한 날</span><b style="color:#92400E" th:text="${shortDays} + '일'"></b></div>
+    </section>
+
     <section class="card">
-        <h2>내 일터</h2>
+        <div class="row">
+            <h2 style="margin:0" th:text="${monday.monthValue} + '월 ' + ${monday.dayOfMonth} + '일 – ' + ${sunday.monthValue} + '월 ' + ${sunday.dayOfMonth} + '일'"></h2>
+            <span style="display:flex; gap:4px">
+                <a class="icon-btn" style="background:#F2F4F6" th:href="@{/work(week=${prevWeek})}" aria-label="이전 주">‹</a>
+                <a class="icon-btn" style="background:#F2F4F6" th:href="@{/work(week=${nextWeek})}" aria-label="다음 주">›</a>
+            </span>
+        </div>
+        <a class="notice" style="margin-top:12px" href="#places" th:if="${places.isEmpty()}">먼저 아래 '내 일터'에서 일한 곳을 추가하세요.</a>
+        <div class="day" th:each="d : ${days}">
+            <details th:if="${!places.isEmpty()}">
+                <summary>
+                    <b style="font-size:15px" th:text="${d.label()}"></b>
+                    <span style="display:flex; align-items:center; gap:6px">
+                        <span class="badge" th:if="${!d.shifts().isEmpty()}" th:classappend="${d.badgeCss()}" th:text="${d.badge()}"></span>
+                        <span class="add-pill">+ 근무</span>
+                    </span>
+                </summary>
+                <form method="post" th:action="@{/work/shift}" class="addrow">
+                    <input type="hidden" name="workDate" th:value="${d.date()}">
+                    <select name="recordId" aria-label="일터"><option th:each="p : ${places}" th:value="${p.id()}" th:text="${p.name()}"></option></select>
+                    <input type="number" name="workHours" step="0.5" min="0.5" max="24" value="8" aria-label="근무 시간" required>
+                    <button class="btn" type="submit">추가</button>
+                </form>
+            </details>
+            <div class="row" th:if="${places.isEmpty()}"><b style="font-size:15px" th:text="${d.label()}"></b></div>
+            <div class="shift" th:each="sh : ${d.shifts()}">
+                <span style="display:flex; align-items:center; gap:8px"><span class="dot" th:style="'background:' + ${sh.color()}"></span>
+                    <span th:text="${sh.employer()}"></span></span>
+                <span style="display:flex; align-items:center; gap:8px">
+                    <b th:text="${sh.hours()}" th:style="${sh.full()} ? '' : 'color:#92400E'"></b>
+                    <form method="post" th:action="@{/work/shift/{id}/delete(id=${sh.id()})}">
+                        <input type="hidden" name="week" th:value="${monday}">
+                        <button class="x" type="submit" th:attr="aria-label=${d.label()} + ' ' + ${sh.employer()} + ' 근무 지우기'">✕</button>
+                    </form>
+                </span>
+            </div>
+            <p class="muted" style="color:#78350F; margin:6px 0 0" th:if="${!d.note().isEmpty()}" th:text="${d.note()}"></p>
+        </div>
+    </section>
+
+    <details id="places" class="card places" th:open="${places.isEmpty()}">
+        <summary><h2 style="margin:0" th:text="'내 일터 ' + ${places.size()} + '곳'">내 일터</h2><span class="chev">열기·추가</span></summary>
         <p class="muted" th:if="${places.isEmpty()}">먼저 일터를 추가하세요.</p>
         <div style="display:flex; align-items:flex-start; gap:8px; padding:6px 0" th:each="p : ${places}">
             <span class="dot" style="margin-top:6px" th:style="'margin-top:6px; background:' + ${p.color()}"></span>
@@ -28,7 +85,7 @@
         </div>
         <p class="muted" th:each="p : ${places}" th:if="${!p.counted()}" th:text="${p.name()} + ': ' + ${p.status()} + ' · 합계에 넣지 않아요'"></p>
         <p class="muted">'하루 몇 시간'은 그 일터에서 보통 하루 일하는 시간이에요. 이보다 짧게 일한 날은 따로 표시해요.</p>
-        <details>
+        <details class="addplace">
             <summary>+ 일터 추가</summary>
             <form method="post" th:action="@{/work/place}">
                 <label class="f">일터 이름</label><input name="employer" required maxlength="100">
@@ -50,47 +107,10 @@
                 <p class="muted">매일 출근하는 정규 근무는 <a href="/ledger">상세</a> 화면에서 기간으로 넣어요.</p>
             </form>
         </details>
-    </section>
+    </details>
 
-    <section class="card">
-        <div class="row">
-            <h2 style="margin:0" th:text="${monday.monthValue} + '월 ' + ${monday.dayOfMonth} + '일 – ' + ${sunday.monthValue} + '월 ' + ${sunday.dayOfMonth} + '일'"></h2>
-            <span style="display:flex; gap:4px">
-                <a class="icon-btn" style="background:#F2F4F6" th:href="@{/work(week=${prevWeek})}" aria-label="이전 주">‹</a>
-                <a class="icon-btn" style="background:#F2F4F6" th:href="@{/work(week=${nextWeek})}" aria-label="다음 주">›</a>
-            </span>
-        </div>
-        <div class="day" th:each="d : ${days}">
-            <div class="row"><b style="font-size:15px" th:text="${d.label()}"></b><span class="badge" th:classappend="${d.badgeCss()}" th:text="${d.badge()}"></span></div>
-            <div class="shift" th:each="sh : ${d.shifts()}">
-                <span style="display:flex; align-items:center; gap:8px"><span class="dot" th:style="'background:' + ${sh.color()}"></span>
-                    <span th:text="${sh.employer()}"></span></span>
-                <span style="display:flex; align-items:center; gap:8px">
-                    <b th:text="${sh.hours()}" th:style="${sh.full()} ? '' : 'color:#92400E'"></b>
-                    <form method="post" th:action="@{/work/shift/{id}/delete(id=${sh.id()})}">
-                        <input type="hidden" name="week" th:value="${monday}">
-                        <button class="x" type="submit" th:attr="aria-label=${d.label()} + ' ' + ${sh.employer()} + ' 근무 지우기'">✕</button>
-                    </form>
-                </span>
-            </div>
-            <p class="muted" style="color:#78350F; margin:6px 0 0" th:if="${!d.note().isEmpty()}" th:text="${d.note()}"></p>
-            <details th:if="${!places.isEmpty()}">
-                <summary>+ 근무</summary>
-                <form method="post" th:action="@{/work/shift}" class="addrow">
-                    <input type="hidden" name="workDate" th:value="${d.date()}">
-                    <select name="recordId" aria-label="일터"><option th:each="p : ${places}" th:value="${p.id()}" th:text="${p.name()}"></option></select>
-                    <input type="number" name="workHours" step="0.5" min="0.5" max="24" value="8" aria-label="근무 시간" required>
-                    <button class="btn" type="submit">추가</button>
-                </form>
-            </details>
-        </div>
-    </section>
 
-    <section class="card sum">
-        <div><span class="label">일한 날</span><b th:text="${worked} + '일'"></b></div>
-        <div><span class="label">인정</span><b style="color:#2F6FEB" th:text="${sure} + '일'"></b></div>
-        <div><span class="label">짧게 일한 날</span><b style="color:#92400E" th:text="${shortDays} + '일'"></b></div>
-    </section>
+
     <p class="muted" style="margin:12px 4px">주 5일 일하면 7일로 쳐줘요 (주말 포함). 하루에 두 곳에서 일해도 1일을 넘지 않아요.
         짧게 일한 날은 인정 안 될 수도 있어서 홈 화면 숫자에 넣지 않아요.</p>
     <p class="muted" style="margin:0 4px" th:text="${disclaimer}"></p>
