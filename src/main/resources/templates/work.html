@@ -88,14 +88,13 @@
         <details class="addplace">
             <summary>+ 일터 추가</summary>
             <form method="post" th:action="@{/work/place}">
+                <p class="muted" style="margin:8px 0 0" th:text="'이 일터는 ' + ${goalName} + ' 비자 기록에 들어가요. 바꾸려면 내 계정에서 준비 중인 비자를 고르세요.'"></p>
                 <label class="f">일터 이름</label><input name="employer" required maxlength="100">
                 <label class="f">포스트코드 (숫자 4자리)</label><input name="postcode" required pattern="[0-9]{4}" inputmode="numeric">
                 <label class="f">업종</label>
                 <select name="industry">
                     <option value="REGIONAL_PRIMARY_MINING_CONSTRUCTION">농장·축산·어업·임업·광업·건설</option>
                     <option value="TOURISM_HOSPITALITY">관광·요식업</option>
-                    <option value="BUSHFIRE_RECOVERY">산불 복구</option>
-                    <option value="NATURAL_DISASTER_RECOVERY">재해 복구</option>
                 </select>
                 <label class="f">농장 일이면 작업 종류</label>
                 <select name="workType"><option value="">해당 없음</option>

@@ -37,13 +37,23 @@ public class AppUserService {
     @Transactional
     public void updateVisaPlan(AppUser owner, java.time.LocalDate visaExpiry, Integer bufferDays) {
         if (visaExpiry == null) {
-            throw new IllegalArgumentException("1년차 비자 만료일을 입력하세요.");
+            throw new IllegalArgumentException("비자 만료일을 입력하세요.");
         }
         if (bufferDays == null || bufferDays < 0) {
             throw new IllegalArgumentException("버퍼 일수는 0 이상 정수로 입력하세요.");
         }
         AppUser u = users.findById(owner.getId()).orElseThrow(() -> new IllegalArgumentException("계정을 찾지 못했습니다."));
         u.updateVisaPlan(visaExpiry, bufferDays);
+    }
+
+    /** F5: 지금 준비 중인 비자 저장. 2(세컨) 또는 3(서드)만 받는다. */
+    @Transactional
+    public void updateGoalVisa(AppUser owner, int goalVisa) {
+        if (goalVisa != 2 && goalVisa != 3) {
+            throw new IllegalArgumentException("세컨 또는 서드 중에서 골라 주세요.");
+        }
+        AppUser u = users.findById(owner.getId()).orElseThrow(() -> new IllegalArgumentException("계정을 찾지 못했습니다."));
+        u.updateGoalVisa(goalVisa);
     }
 
     @Transactional(readOnly = true)

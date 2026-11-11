@@ -37,6 +37,10 @@ public class AppUser {
     @Column(name = "buffer_days")
     private Integer bufferDays;
 
+    /** F5: 지금 준비 중인 비자. 2 = 세컨, 3 = 서드 (사용자가 직접 고름, 기본 2). */
+    @Column(name = "goal_visa", nullable = false)
+    private int goalVisa = 2;
+
     protected AppUser() {
     }
 
@@ -55,6 +59,14 @@ public class AppUser {
     void updateVisaPlan(java.time.LocalDate visaExpiry, int bufferDays) {
         this.visaExpiry = visaExpiry;
         this.bufferDays = bufferDays;
+    }
+
+    void updateGoalVisa(int goalVisa) {
+        this.goalVisa = goalVisa;
+    }
+
+    public int getGoalVisa() {
+        return goalVisa;
     }
 
     public java.time.LocalDate getVisaExpiry() {

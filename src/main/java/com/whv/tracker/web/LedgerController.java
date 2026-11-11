@@ -58,10 +58,9 @@ public class LedgerController {
         model.addAttribute("owner", owner);
         if (owner.getVisaExpiry() != null && owner.getBufferDays() != null) {
             model.addAttribute("pace", PacePlan.of(owner.getVisaExpiry(), owner.getBufferDays(), LocalDate.now(),
-                    dashboard.summaries().get(0)));
+                    dashboard.summaries().get(owner.getGoalVisa() == 3 ? 1 : 0)));
         }
-        model.addAttribute("industries", Industry.values());
-        model.addAttribute("disasterTypes", DisasterWorkType.values());
+        model.addAttribute("industries", Industry.selectable());
         model.addAttribute("workTypes", WorkType.values());
         model.addAttribute("disclaimer", DISCLAIMER);
         return "ledger";

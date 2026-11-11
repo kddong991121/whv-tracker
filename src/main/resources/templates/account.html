@@ -5,12 +5,29 @@
 <div class="app">
     <header class="top"><div><div class="sub">로그인 정보</div><h1>내 계정</h1></div></header>
     <div class="flash err" th:if="${error}" th:text="${error}"></div>
+    <style>
+        label.goal { display:flex; gap:12px; align-items:flex-start; padding:12px; border:1px solid #E5E8EB; border-radius:14px; margin-top:8px; cursor:pointer; font-size:15px; }
+        label.goal input { width:20px; height:20px; margin:2px 0 0; flex-shrink:0; }
+        label.goal:has(input:checked) { border-color:#2E6B52; background:#F1F7F3; }
+    </style>
 
     <section class="card">
         <p th:if="${user != null}" style="margin:0; font-weight:700" th:text="${user.displayName}"></p>
         <p th:if="${user != null}" class="label" style="margin:4px 0 14px" th:text="${user.email}"></p>
         <p th:if="${user == null}" class="muted">계정 정보를 찾지 못했어요. 다시 로그인하세요.</p>
         <form method="post" th:action="@{/logout}"><button class="btn ghost" type="submit">로그아웃</button></form>
+    </section>
+
+    <section class="card" id="goal" th:if="${user != null}">
+        <h2>지금 준비 중인 비자</h2>
+        <p class="muted" style="margin:0 0 12px">고른 비자 기준으로 홈 숫자와 남은 기간을 계산해요. 저장한 기록은 바뀌지 않아요.</p>
+        <form method="post" th:action="@{/account/goal-visa}">
+            <label class="goal"><input type="radio" name="goalVisa" value="2" th:checked="${user.goalVisa == 2}">
+                <span><b>세컨 비자 (88일)</b><br><span class="muted">지금 1년차 워홀 비자예요</span></span></label>
+            <label class="goal"><input type="radio" name="goalVisa" value="3" th:checked="${user.goalVisa == 3}">
+                <span><b>서드 비자 (179일)</b><br><span class="muted">세컨을 받았고 지금 2년차 비자예요</span></span></label>
+            <button class="btn" type="submit" style="width:100%; margin-top:12px">저장</button>
+        </form>
     </section>
 
     <section class="card">

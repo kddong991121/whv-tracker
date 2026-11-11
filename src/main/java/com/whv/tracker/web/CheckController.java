@@ -36,9 +36,8 @@ public class CheckController {
                         Model model) {
         // 로그인한 사용자에게만 하단 메뉴를 보여준다 (다른 탭은 로그인이 필요해서).
         model.addAttribute("loggedIn", HomeController.isLoggedIn(authentication));
-        model.addAttribute("industries", Industry.values());
+        model.addAttribute("industries", Industry.selectable());
         model.addAttribute("workTypes", WorkType.values());
-        model.addAttribute("disasterTypes", DisasterWorkType.values());
         model.addAttribute("disclaimer", LedgerController.DISCLAIMER);
         model.addAttribute("sourceUrl", SOURCE_URL);
         model.addAttribute("postcode", postcode);

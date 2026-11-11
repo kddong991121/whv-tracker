@@ -84,7 +84,7 @@ class LedgerControllerTest {
         mvc.perform(post("/visa-plan").param("visaExpiry", "2099-01-01").param("bufferDays", "-1"))
                 .andExpect(flash().attributeExists("error"));
         mvc.perform(get("/ledger"))
-                .andExpect(content().string(containsString("일주일에 필요한 인정 일수")));
+                .andExpect(content().string(containsString("일주일에 출근할 날")));
     }
 
     @Test

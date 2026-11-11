@@ -57,7 +57,9 @@ public class HomeController {
         }
         LocalDate today = LocalDate.now();
         LedgerService.Dashboard dashboard = ledger.dashboard(owner);
-        VisaSummary second = dashboard.summaries().get(0);
+        // 지금 준비 중인 비자(세컨 2 / 서드 3)의 누적만 홈에 보여준다. summaries는 [세컨, 서드] 순서.
+        int goal = owner.getGoalVisa();
+        VisaSummary second = dashboard.summaries().get(goal == 3 ? 1 : 0);
         model.addAttribute("s", second);
         model.addAttribute("today", today);
 
@@ -82,8 +84,8 @@ public class HomeController {
 
         YearMonth month = YearMonth.from(today);
         model.addAttribute("month", month);
-        model.addAttribute("cells", calendarCells(month, today, ledger.calendar(owner, month)));
-        model.addAttribute("places", places(dashboard));
+        model.addAttribute("cells", calendarCells(month, today, ledger.calendar(owner, month, goal)));
+        model.addAttribute("places", places(dashboard, goal));
         return "home";
     }
 
@@ -91,6 +93,24 @@ public class HomeController {
     public String login(@RequestParam(required = false) String error, Model model) {
         model.addAttribute("error", error);
         return "login";
+    }
+
+    /** F5: 지금 준비 중인 비자(2 세컨 / 3 서드) 저장. */
+    @org.springframework.web.bind.annotation.PostMapping("/account/goal-visa")
+    public String saveGoalVisa(Authentication authentication, @RequestParam(defaultValue = "0") int goalVisa,
+                               org.springframework.web.servlet.mvc.support.RedirectAttributes redirect) {
+        AppUser user = users.findByGoogleSubject(authentication.getName());
+        if (user == null) {
+            return "redirect:/login";
+        }
+        try {
+            users.updateGoalVisa(user, goalVisa);
+            redirect.addFlashAttribute("message", (goalVisa == 3 ? "서드" : "세컨") + " 비자 준비로 바꿨어요.");
+        } catch (IllegalArgumentException e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+            return "redirect:/account";
+        }
+        return "redirect:/";
     }
 
     @GetMapping("/account")
@@ -154,9 +174,12 @@ public class HomeController {
     record Place(String name, String detail, String value, boolean counted) {
     }
 
-    static List<Place> places(LedgerService.Dashboard dashboard) {
+    static List<Place> places(LedgerService.Dashboard dashboard, int visaYear) {
         List<Place> out = new ArrayList<>();
         for (WorkRecord r : dashboard.records()) {
+            if (r.getVisaYear() != visaYear) {
+                continue;
+            }
             if (r.getVisaYear() != 2) {
                 continue;
             }

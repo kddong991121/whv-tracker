@@ -71,6 +71,37 @@ class HomeWorkPagesTest {
     }
 
     @Test
+    void goalVisa_third_switchesHomeAndNewPlaces() throws Exception {
+        LocalDate today = LocalDate.now();
+        ledger.addCasual(owner, "세컨 농장", "4670", Industry.REGIONAL_PRIMARY_MINING_CONSTRUCTION, 2,
+                today.minusDays(10), today, 5, null, null, null, new BigDecimal("8"), null, false);
+
+        // 잘못된 값은 거부하고 기본값(세컨)을 유지한다
+        mvc.perform(post("/account/goal-visa").param("goalVisa", "4"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attributeExists("error"));
+
+        mvc.perform(post("/account/goal-visa").param("goalVisa", "3"))
+                .andExpect(status().is3xxRedirection());
+
+        // 홈은 서드 기준(179일)이고, 세컨에 넣은 일터는 보이지 않는다
+        mvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("서드 비자 준비 중")))
+                .andExpect(content().string(containsString("/ 179일")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("세컨 농장"))));
+
+        // 근무 기록 화면에서 새로 넣는 일터는 서드(3)로 저장된다
+        mvc.perform(post("/work/place").param("employer", "서드 농장").param("postcode", "4670")
+                        .param("industry", "REGIONAL_PRIMARY_MINING_CONSTRUCTION").param("normalHours", "8")
+                        .param("startDate", today.minusDays(5).toString()).param("endDate", today.toString()))
+                .andExpect(status().is3xxRedirection());
+        WorkRecord added = ledger.dashboard(owner).records().stream()
+                .filter(r -> r.getEmployerName().equals("서드 농장")).findFirst().orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(added.getVisaYear()).isEqualTo(3);
+    }
+
+    @Test
     void work_addAndDeleteShift() throws Exception {
         LocalDate day = LocalDate.of(2026, 11, 5);
         WorkRecord a = ledger.addCasual(owner, "그린밸리", "4670", Industry.REGIONAL_PRIMARY_MINING_CONSTRUCTION, 2,

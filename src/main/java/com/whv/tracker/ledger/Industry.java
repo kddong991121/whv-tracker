@@ -17,6 +17,16 @@ public enum Industry {
         this.label = label;
     }
 
+    /**
+     * 입력 화면에서 고를 수 있는 업종. 산불·재해 복구, 코로나 의료는 실제 신청자가 거의 없어 화면에서 뺐다 (2026-11-11 사용자 결정).
+     * 이미 저장된 기록과 계산 규칙은 그대로 둔다.
+     */
+    public static java.util.List<Industry> selectable() {
+        return java.util.Arrays.stream(values())
+                .filter(i -> i != BUSHFIRE_RECOVERY && i != NATURAL_DISASTER_RECOVERY && i != COVID_HEALTHCARE)
+                .toList();
+    }
+
     /** 화면에 보여줄 한국어 이름. 영문 상수 이름을 화면에 그대로 쓰지 않는다. */
     public String label() {
         return label;

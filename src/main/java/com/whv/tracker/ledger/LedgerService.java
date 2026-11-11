@@ -199,15 +199,15 @@ public class LedgerService {
 
     /**
      * 달력 한 달치 하루 종류 (합계에 들어가는 일터만). 매일 출근 기간 > 일한 날(인정) > 짧게 일한 날 순으로 표시한다.
-     * 세컨 비자(2차) 기록만 본다.
+     * visaYear(2 세컨 / 3 서드) 기록만 본다.
      */
     @Transactional(readOnly = true)
-    public Map<LocalDate, DayKind> calendar(AppUser owner, java.time.YearMonth month) {
+    public Map<LocalDate, DayKind> calendar(AppUser owner, java.time.YearMonth month, int visaYear) {
         Map<LocalDate, DayKind> out = new java.util.HashMap<>();
         LocalDate first = month.atDay(1);
         LocalDate last = month.atEndOfMonth();
         for (WorkRecord r : records.findByOwnerAndMode(owner, WorkMode.EMPLOYMENT_PERIOD)) {
-            if (r.getVisaYear() != 2 || !countable(r)) {
+            if (r.getVisaYear() != visaYear || !countable(r)) {
                 continue;
             }
             for (LocalDate d = max(r.getStartDate(), first); !d.isAfter(min(r.getEndDate(), last)); d = d.plusDays(1)) {
@@ -217,7 +217,7 @@ public class LedgerService {
         for (WorkDay d : days.findByRecordOwner(owner)) {
             WorkRecord r = d.getRecord();
             LocalDate date = d.getWorkDate();
-            if (r.getVisaYear() != 2 || !countable(r) || date.isBefore(first) || date.isAfter(last)) {
+            if (r.getVisaYear() != visaYear || !countable(r) || date.isBefore(first) || date.isAfter(last)) {
                 continue;
             }
             DayKind now = out.get(date);

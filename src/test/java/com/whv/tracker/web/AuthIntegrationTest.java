@@ -58,7 +58,11 @@ class AuthIntegrationTest {
                 .andExpect(content().string(containsString("세컨 인정 지역이에요")))
                 // 로그인 전에는 하단 메뉴 대신 '처음으로' 링크만 보인다 (다른 탭은 로그인이 필요해서)
                 .andExpect(content().string(not(containsString("aria-label=\"하단 메뉴\""))))
-                .andExpect(content().string(containsString("처음으로")));
+                .andExpect(content().string(containsString("처음으로")))
+                // 재해 복구·유급/봉사 입력은 화면에서 뺐다 (2026-11-11 결정)
+                .andExpect(content().string(not(containsString("disasterWorkType"))))
+                .andExpect(content().string(not(containsString("NATURAL_DISASTER_RECOVERY"))))
+                .andExpect(content().string(not(containsString("COVID_HEALTHCARE"))));
     }
 
     @Test

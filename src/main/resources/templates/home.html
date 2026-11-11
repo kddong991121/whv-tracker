@@ -18,15 +18,16 @@
 </style>
 <div class="app">
     <header class="top">
-        <div><div class="sub">세컨 비자 준비 중</div><h1>워홀 88</h1></div>
+        <div><div class="sub"><span th:text="${s.visaName()} + ' 비자 준비 중'">세컨 비자 준비 중</span> · <a href="/account#goal" style="color:inherit">바꾸기</a></div><h1>워홀 88</h1></div>
         <a class="icon-btn" href="/account" aria-label="내 계정">⚙</a>
     </header>
     <form method="post" th:action="@{/logout}" hidden></form>
+    <div class="flash ok" th:if="${message}" th:text="${message}"></div>
 
     <section class="card">
         <p style="margin:0 0 16px; font-size:18px; font-weight:700" th:if="${!s.targetMet()}">
-            세컨 비자까지 <span style="color:#2F6FEB" th:text="${s.remainingDays()} + '일'"></span> 남았어요</p>
-        <p style="margin:0 0 16px; font-size:18px; font-weight:700" th:if="${s.targetMet()}">세컨 비자 88일을 채웠어요</p>
+            <th:block th:text="${s.visaName()}">세컨</th:block> 비자까지 <span style="color:#2F6FEB" th:text="${s.remainingDays()} + '일'"></span> 남았어요</p>
+        <p style="margin:0 0 16px; font-size:18px; font-weight:700" th:if="${s.targetMet()}" th:text="${s.visaName()} + ' 비자 ' + ${s.target()} + '일을 채웠어요'"></p>
         <div><span class="big" th:text="${s.displayDays()} + '일'"></span>
             <span style="font-size:22px; font-weight:700; color:#4E5968" th:text="'/ ' + ${s.target()} + '일'"></span></div>
         <div class="bar" role="img" th:attr="aria-label='인정된 날 ' + ${surePct} + '퍼센트'">
@@ -38,7 +39,7 @@
         <a class="notice" href="/work" th:if="${s.shortDays() > 0}">
             <b th:text="'짧게 일한 날이 ' + ${s.shortDays()} + '일 있어요.'"></b><br>인정 안 될 수도 있어서 위 숫자에 넣지 않았어요.</a>
         <p class="label" style="margin:14px 0 0" th:if="${startedDays != null}"
-           th:text="${startedDays >= s.target()} ? '시작한 지 ' + ${startedDays} + '일 · 3개월(88일) 기간은 지났어요' : '시작한 지 ' + ${startedDays} + '일 · 3개월(88일)이 지나야 신청할 수 있어요'"></p>
+           th:text="${startedDays >= s.target()} ? '시작한 지 ' + ${startedDays} + '일 · ' + ${s.periodText()} + ' 기간은 지났어요' : '시작한 지 ' + ${startedDays} + '일 · ' + ${s.periodText()} + '이 지나야 신청할 수 있어요'"></p>
         <p class="label" style="margin:14px 0 0" th:if="${startedDays == null}">아직 기록이 없어요. 아래 "근무 추가"로 시작하세요.</p>
     </section>
 
@@ -49,17 +50,28 @@
                 <span style="font-size:28px; font-weight:800; color:#C2410C" th:text="${expiryDays >= 0} ? 'D-' + ${expiryDays} : '만료일 지남'"></span>
                 <span class="muted" th:text="${#temporals.format(expiry, 'yyyy년 M월 d일')}"></span>
             </th:block>
-            <a th:if="${expiry == null}" href="/ledger" style="font-size:15px; font-weight:700">만료일 입력하기</a>
+            <a th:if="${expiry == null}" href="/ledger#visa-plan" style="font-size:15px; font-weight:700">만료일 입력하기</a>
+            <a th:if="${expiry != null}" href="/ledger#visa-plan" style="font-size:13px; margin-top:4px">만료일·여유 일수 수정</a>
         </section>
         <section class="card" style="margin:0">
-            <span class="label">일주일에 필요한 날</span>
-            <th:block th:if="${pace != null and !pace.goalMet() and pace.weeklyNeeded() != null}">
-                <span style="font-size:28px; font-weight:800" th:text="'주 ' + ${pace.weeklyNeeded()} + '일'"></span>
-                <span class="muted" th:text="${pace.targetDate()} + '까지 끝내려면'"></span>
+            <th:block th:if="${pace != null and !pace.goalMet() and pace.achievable()}">
+                <span class="label" th:text="${#temporals.format(pace.targetDate(), 'M월 d일')} + '까지 끝내려면'"></span>
+                <span style="font-size:24px; font-weight:800; line-height:1.3; white-space:nowrap"><th:block th:text="'주 ' + ${pace.workDaysPerWeek()} + '일'"></th:block> 출근</span>
+                <span class="muted">하루 평소 근무 시간을 꽉 채운 날 기준이에요</span>
             </th:block>
-            <span th:if="${pace != null and pace.goalMet()}" style="font-size:20px; font-weight:800">목표 달성</span>
-            <span th:if="${pace == null}" class="muted">만료일을 넣으면 계산해요</span>
-            <span th:if="${pace != null and !pace.goalMet() and pace.weeklyNeeded() == null}" class="muted">계산할 수 없어요 (목표일이 지났어요)</span>
+            <th:block th:if="${pace != null and !pace.goalMet() and !pace.achievable()}">
+                <span class="label" th:text="${pace.targetPassed()} ? '완료 목표일이 지났어요' : ${#temporals.format(pace.targetDate(), 'M월 d일')} + '까지는'"></span>
+                <span style="font-size:20px; font-weight:800; color:#C2410C">채우기 어려워요</span>
+                <span class="muted" th:text="'매일 일해도 최소 ' + ${pace.minWeeks()} + '주가 필요해요'"></span>
+            </th:block>
+            <th:block th:if="${pace != null and pace.goalMet()}">
+                <span class="label">일주일에 출근할 날</span>
+                <span style="font-size:20px; font-weight:800">목표 달성</span>
+            </th:block>
+            <th:block th:if="${pace == null}">
+                <span class="label">일주일에 출근할 날</span>
+                <span class="muted">만료일을 넣으면 계산해요</span>
+            </th:block>
         </section>
     </div>
 

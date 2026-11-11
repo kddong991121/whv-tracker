@@ -19,6 +19,16 @@ public record VisaSummary(int visaYear, BigDecimal rawTotal, long employmentDays
                           BigDecimal casualConverted, BigDecimal total, long span,
                           java.time.LocalDate firstDate, int shortDays, List<String> warnings) {
 
+    /** 화면용 비자 이름: 세컨 또는 서드. */
+    public String visaName() {
+        return visaYear == 3 ? "서드" : "세컨";
+    }
+
+    /** 화면용 최소 기간 문구: 3개월(88일) 또는 6개월(179일). */
+    public String periodText() {
+        return visaYear == 3 ? "6개월(179일)" : "3개월(88일)";
+    }
+
     public int target() {
         return WorkCalculator.targetFor(visaYear);
     }

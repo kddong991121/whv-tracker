@@ -56,4 +56,36 @@ class PacePlanTest {
         assertThatThrownBy(() -> PacePlan.of(TODAY.plusDays(30), -1, TODAY, worked(TODAY, 1)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void thirdVisa_uses179DaysTargetAndPeriod() {
+        // 서드: 100일 인정, 79일 더 필요. 만료일 140일 뒤 → 79 × 7 ÷ 140 = 3.95 → 4.0
+        VisaSummary third = WorkCalculator.summarize(3,
+                List.of(new EmploymentPeriod(1, 3, TODAY.minusDays(100), TODAY.minusDays(1), 0, true)), List.of());
+        PacePlan p = PacePlan.of(TODAY.plusDays(140), 0, TODAY, third);
+
+        assertThat(p.neededDays()).isEqualTo(79);
+        assertThat(p.weeklyNeeded()).isEqualByComparingTo("4.0");
+        assertThat(p.spanShort()).isFalse();
+        assertThat(third.visaName()).isEqualTo("서드");
+
+        // 첫 근무일부터 완료 목표일까지 179일이 안 되면 기간 경고
+        VisaSummary late = WorkCalculator.summarize(3,
+                List.of(new EmploymentPeriod(1, 3, TODAY.minusDays(10), TODAY.minusDays(1), 0, true)), List.of());
+        assertThat(PacePlan.of(TODAY.plusDays(100), 0, TODAY, late).spanShort()).isTrue();
+    }
+
+    @Test
+    void workDaysPerWeek_andNotAchievable() {
+        // 30일 더 필요, 70일 남음 → 출근 30 × 5 ÷ 70 = 2.14 → 3일 (올림)
+        PacePlan ok = PacePlan.of(TODAY.plusDays(70), 0, TODAY, worked(TODAY.minusDays(58), 58));
+        assertThat(ok.achievable()).isTrue();
+        assertThat(ok.workDaysPerWeek()).isEqualTo(3);
+
+        // 87일 더 필요, 17일 남음 → 매일 일해도 불가능, 최소 13주
+        PacePlan no = PacePlan.of(TODAY.plusDays(17), 0, TODAY, worked(TODAY.minusDays(1), 1));
+        assertThat(no.achievable()).isFalse();
+        assertThat(no.workDaysPerWeek()).isNull();
+        assertThat(no.minWeeks()).isEqualTo(13);
+    }
 }

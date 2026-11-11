@@ -71,7 +71,10 @@ public class WorkController {
         LocalDate monday = (week == null ? LocalDate.now() : week).with(DayOfWeek.MONDAY);
         LedgerService.Dashboard dashboard = ledger.dashboard(owner);
 
-        List<WorkRecord> casual = dashboard.records().stream().filter(r -> r.getMode() == WorkMode.CASUAL_DAYS).toList();
+        // 지금 준비 중인 비자(세컨/서드)에 넣은 일터만 보여준다
+        int goal = owner.getGoalVisa();
+        List<WorkRecord> casual = dashboard.records().stream()
+                .filter(r -> r.getMode() == WorkMode.CASUAL_DAYS && r.getVisaYear() == goal).toList();
         List<Place> places = new ArrayList<>();
         for (int i = 0; i < casual.size(); i++) {
             WorkRecord r = casual.get(i);
@@ -111,7 +114,7 @@ public class WorkController {
             } else if (!anyCounted) {
                 badge = "합계 제외";
                 css = "off";
-                note = "세컨 인정 지역·업무로 확인되지 않은 일터예요.";
+                note = "인정 지역·업무로 확인되지 않은 일터예요.";
                 worked++;
             } else if (anyFull) {
                 badge = "인정";
@@ -139,6 +142,7 @@ public class WorkController {
         model.addAttribute("sure", sure);
         model.addAttribute("shortDays", shortDays);
         model.addAttribute("workTypes", WorkType.values());
+        model.addAttribute("goalName", goal == 3 ? "서드" : "세컨");
         model.addAttribute("disclaimer", HomeController.DISCLAIMER);
         return "work";
     }
@@ -158,7 +162,7 @@ public class WorkController {
         return "redirect:/work?week=" + week;
     }
 
-    /** 일한 날 기록 일터 추가. 차수는 세컨(2), 기준 주당 근무일은 5로 저장한다. */
+    /** 일한 날 기록 일터 추가. 차수는 지금 준비 중인 비자(세컨 2 / 서드 3), 기준 주당 근무일은 5로 저장한다. */
     @PostMapping("/work/place")
     public String addPlace(Authentication authentication, @RequestParam String employer, @RequestParam String postcode,
                            @RequestParam Industry industry, @RequestParam(required = false) WorkType workType,
@@ -166,7 +170,7 @@ public class WorkController {
                            @RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate startDate,
                            @RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate endDate,
                            RedirectAttributes redirect) {
-        run(authentication, redirect, owner -> ledger.addCasual(owner, employer, postcode, industry, 2, startDate,
+        run(authentication, redirect, owner -> ledger.addCasual(owner, employer, postcode, industry, owner.getGoalVisa(), startDate,
                 endDate, 5, null, null, null, normalHours, workType, false), "일터를 추가했어요.");
         return "redirect:/work?week=" + startDate;
     }

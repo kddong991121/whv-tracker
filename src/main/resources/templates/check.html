@@ -22,20 +22,11 @@
             <select id="industry" name="industry">
                 <option value="TOURISM_HOSPITALITY" th:selected="${industry != null and industry.name() == 'TOURISM_HOSPITALITY'}">관광·요식업</option>
                 <option value="REGIONAL_PRIMARY_MINING_CONSTRUCTION" th:selected="${industry == null or industry.name() == 'REGIONAL_PRIMARY_MINING_CONSTRUCTION'}">농장·축산·어업·임업·광업·건설</option>
-                <option value="BUSHFIRE_RECOVERY" th:selected="${industry != null and industry.name() == 'BUSHFIRE_RECOVERY'}">산불 복구</option>
-                <option value="NATURAL_DISASTER_RECOVERY" th:selected="${industry != null and industry.name() == 'NATURAL_DISASTER_RECOVERY'}">재해 복구 (홍수·사이클론 등)</option>
-                <option value="COVID_HEALTHCARE" th:selected="${industry != null and industry.name() == 'COVID_HEALTHCARE'}">코로나 의료</option>
             </select>
             <label class="f" for="workType">농장 일이면 작업 종류</label>
             <select id="workType" name="workType">
                 <option value="">해당 없음</option>
                 <option th:each="w : ${workTypes}" th:value="${w.name()}" th:text="${w.label()}"></option>
-            </select>
-            <label class="f" for="disasterWorkType">재해 복구면 유급/봉사</label>
-            <select id="disasterWorkType" name="disasterWorkType">
-                <option value="">해당 없음</option>
-                <option value="PAID">유급</option>
-                <option value="VOLUNTEER">봉사</option>
             </select>
             <label class="f" for="lodgeDate">비자 신청 예정일 (비우면 오늘)</label>
             <input id="lodgeDate" type="date" name="lodgeDate">

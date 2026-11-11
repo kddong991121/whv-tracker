@@ -13,7 +13,11 @@
     form button { height:48px; border:0; border-radius:14px; background:#2F6FEB; color:#fff; font-size:16px; font-weight:700; font-family:inherit; cursor:pointer; }
     .rec { border:1px solid #EFEAE0; border-radius:14px; padding:14px; margin-top:10px; }
     .row { font-size:14px; padding:3px 0; }
-    .big { font-size:28px; font-weight:800; color:#2F6FEB; }
+    .big { font-size:34px; font-weight:800; color:#2F6FEB; line-height:1.2; }
+    .big .of { font-size:18px; color:#4E5968; font-weight:700; }
+    .note { font-size:13px; color:#4E5968; margin:6px 0 0; }
+    details.more { margin-top:12px; border-top:1px solid #EFEAE0; padding-top:10px; }
+    details.more summary { cursor:pointer; font-size:13px; color:#4E5968; }
     .bar { height:10px; background:#E5E8EB; border-radius:6px; overflow:hidden; margin:8px 0; }
     .bar > span { display:block; height:100%; background:#2F6FEB; }
     .status { font-weight:700; margin:6px 0; font-size:14px; }
@@ -33,54 +37,56 @@
 <div th:if="${error}" class="flash err" th:text="${error}"></div>
 <div th:if="${warning}" class="flash warn" th:text="${warning}"></div>
 
-<!-- F5 남은 기간과 페이스 (세컨 비자 기준) -->
-<section>
+<!-- F5 남은 기간과 페이스 (지금 준비 중인 비자 기준: owner.goalVisa) -->
+<section id="visa-plan">
     <h2>비자 만료일까지</h2>
     <div th:if="${pace}">
         <p class="status warn" th:if="${pace.expired()}">비자 만료일이 지났는지 확인해 주세요.</p>
-        <p class="status ok" th:if="${!pace.expired() and pace.goalMet()}">목표 달성! 세컨 비자 88일을 채웠어요.</p>
+        <p class="status ok" th:if="${!pace.expired() and pace.goalMet()}" th:text="'목표 달성! ' + (${owner.goalVisa} == 3 ? '서드 비자 179일' : '세컨 비자 88일') + '을 채웠어요.'"></p>
         <p class="status warn" th:if="${pace.banner() != null}" th:text="'완료 목표일까지 ' + ${pace.remainingDays()} + '일 남았어요 (D-' + ${pace.banner()} + ' 알림)'"></p>
         <div class="row"><span>완료 목표일</span><span th:text="${pace.targetDate()}"></span></div>
         <div class="row" th:unless="${pace.targetPassed()}"><span>남은 기간</span><span th:text="${pace.remainingDays()} + '일'"></span></div>
         <p class="status warn" th:if="${pace.targetPassed() and !pace.expired()}">완료 목표일이 지났어요.</p>
         <div class="row" th:unless="${pace.goalMet()}"><span>더 필요한 인정 일수</span><span th:text="${pace.neededDays()} + '일'"></span></div>
-        <div class="row" th:unless="${pace.goalMet()}"><span>일주일에 필요한 인정 일수</span>
-            <span th:text="${pace.weeklyNeeded() != null} ? ${pace.weeklyNeeded()} + '일' : '계산할 수 없어요'"></span></div>
-        <p class="status warn" th:if="${pace.spanShort()}">시작한 지 3개월(88일)이 지나야 신청할 수 있어요. 완료 목표일까지 가도 88일이 안 돼요.</p>
+        <div class="row" th:if="${!pace.goalMet() and pace.achievable()}"><span>일주일에 출근할 날 (평소 시간 꽉 채운 날)</span>
+            <span th:text="${pace.workDaysPerWeek()} + '일'"></span></div>
+        <p class="status warn" th:if="${!pace.goalMet() and !pace.achievable()}"
+           th:text="'완료 목표일까지는 채우기 어려워요. 매일 일해도 최소 ' + ${pace.minWeeks()} + '주가 필요해요.'"></p>
+        <p class="status warn" th:if="${pace.spanShort()}" th:text="${owner.goalVisa} == 3 ? '시작한 지 6개월(179일)이 지나야 신청할 수 있어요. 완료 목표일까지 가도 179일이 안 돼요.' : '시작한 지 3개월(88일)이 지나야 신청할 수 있어요. 완료 목표일까지 가도 88일이 안 돼요.'"></p>
     </div>
     <form method="post" th:action="@{/visa-plan}">
-        <label>1년차 비자 만료일 <input type="date" name="visaExpiry" required th:value="${owner.visaExpiry}"></label>
+        <label><span th:text="${owner.goalVisa} == 3 ? '2년차 비자 만료일 (서드 준비 중)' : '1년차 비자 만료일 (세컨 준비 중)'">비자 만료일</span> <input type="date" name="visaExpiry" required th:value="${owner.visaExpiry}"></label>
         <label>며칠 여유를 두고 끝낼까요? (0 이상)
             <input type="number" name="bufferDays" min="0" step="1" required th:value="${owner.bufferDays}"></label>
         <button type="submit">저장</button>
     </form>
 </section>
 
-<!-- 누적 결과 -->
+<!-- 누적 결과: 큰 숫자 + 막대 + 결론 한 줄만 먼저 보여주고, 계산 내역은 접어 둔다 -->
 <section th:each="s : ${dashboard.summaries}">
-    <h2 th:text="(${s.visaYear} == 2 ? '세컨' : '서드') + ' 비자 누적 (목표 ' + ${s.target()} + '일)'"></h2>
-    <div class="big"><span th:text="${s.displayDays()}"></span>일 / <span th:text="${s.target()}"></span>일</div>
-    <div class="row"><span>짧게 일한 날 (인정 안 될 수도 있어요, 위 숫자에 넣지 않음)</span><span th:text="${s.shortDays()} + ' 일'"></span></div>
-    <div class="row"><span>매일 출근한 기간</span><span th:text="${s.employmentDays()} + ' 일'"></span></div>
-    <div class="row"><span>날짜별 근무로 센 일수</span><span th:text="${s.casualConvertedText()} + ' 일'"></span></div>
-    <div class="row"><span>겹치는 날 빼기 전 합계</span><span th:text="${s.rawTotalText()}"></span></div>
-    <div class="row"><span>첫 근무일부터 마지막 근무일까지</span><span th:text="${s.span()} + ' 일'"></span></div>
-
+    <h2 th:text="${s.visaName()} + ' 비자'"></h2>
+    <div class="big"><span th:text="${s.displayDays()}"></span>일 <span class="of" th:text="'/ ' + ${s.target()} + '일'"></span></div>
     <div class="bar"><span th:style="'width:' + ${s.barPercent()} + '%'"></span></div>
-    <div class="row"><span>진행률</span><span th:text="${s.percentText()} + '%'"></span></div>
 
     <p class="status ok" th:if="${s.eligible()}">일수와 기간을 모두 채웠어요</p>
-    <p class="status warn" th:unless="${s.eligible()}" th:text="${s.targetMet()} ? '일수는 채웠지만 첫날부터 마지막 날까지 기간이 아직 짧아요' : '아직 목표 전이에요 (목표 ' + ${s.target()} + '일)'"></p>
-    
+    <p class="status warn" th:if="${!s.eligible() and s.targetMet()}"
+       th:text="'일수는 채웠어요. 첫 근무일부터 ' + ${s.periodText()} + '이 지나야 신청할 수 있어요.'"></p>
+    <p class="status" th:if="${!s.targetMet()}" th:text="${s.remainingDays()} + '일 더 필요해요'"></p>
+    <p class="note" th:if="${s.shortDays() > 0}"
+       th:text="'짧게 일한 날 ' + ${s.shortDays()} + '일은 인정 안 될 수도 있어서 숫자에 넣지 않았어요.'"></p>
+
     <ul class="warn-list" th:if="${!s.warnings().isEmpty()}">
         <li th:each="w : ${s.warnings()}" th:text="${w}"></li>
     </ul>
 
-    <div class="meta">
-        근거: Home Affairs specified work 페이지 (Minimum period, Normal work days or shifts 절).
-        출처 https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/work-holiday-417/specified-work,
-        조사일 2026-11-10, 확인 수준: 원문 확인 (캡처본 기준).
-    </div>
+    <details class="more" th:if="${s.firstDate() != null}">
+        <summary>어떻게 계산했나요?</summary>
+        <div class="row"><span>매일 출근한 기간</span><span th:text="${s.employmentDays()} + '일'"></span></div>
+        <div class="row"><span>날짜별로 일한 날 (주 5일 = 7일로 계산)</span><span th:text="${s.casualConvertedText()} + '일'"></span></div>
+        <div class="row"><span>첫 근무일부터 마지막 근무일까지</span><span th:text="${s.span()} + '일'"></span></div>
+        <p class="meta" style="margin:8px 0 0">같은 날 여러 곳에서 일해도 하루로 셌어요. 근거는 호주 내무부 Specified work 안내
+            (<a href="https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/work-holiday-417/specified-work" target="_blank" rel="noopener">원문</a>, 2026-11-10 확인)예요.</p>
+    </details>
 </section>
 
 <div class="disclaimer" th:text="${disclaimer}"></div>
@@ -99,13 +105,7 @@
             </select>
         </label>
         <label>어느 비자에 넣을까요?
-            <select name="visaYear"><option value="2">세컨 비자</option><option value="3">서드 비자</option></select>
-        </label>
-        <label>재해 복구면 유급/봉사 (안 고르면 합계에 넣지 않아요)
-            <select name="disasterWorkType">
-                <option value="">선택 안 함</option>
-                <option th:each="t : ${disasterTypes}" th:value="${t.name()}" th:text="${t.label()}"></option>
-            </select>
+            <select name="visaYear"><option value="2" th:selected="${owner.goalVisa == 2}">세컨 비자</option><option value="3" th:selected="${owner.goalVisa == 3}">서드 비자</option></select>
         </label>
         <label>농장 일이면 작업 종류 (가공품 제조·정원 관리는 인정 업무가 아니에요)
             <select name="workType">
@@ -136,13 +136,7 @@
             </select>
         </label>
         <label>어느 비자에 넣을까요?
-            <select name="visaYear"><option value="2">세컨 비자</option><option value="3">서드 비자</option></select>
-        </label>
-        <label>재해 복구면 유급/봉사 (안 고르면 합계에 넣지 않아요)
-            <select name="disasterWorkType">
-                <option value="">선택 안 함</option>
-                <option th:each="t : ${disasterTypes}" th:value="${t.name()}" th:text="${t.label()}"></option>
-            </select>
+            <select name="visaYear"><option value="2" th:selected="${owner.goalVisa == 2}">세컨 비자</option><option value="3" th:selected="${owner.goalVisa == 3}">서드 비자</option></select>
         </label>
         <label>농장 일이면 작업 종류 (가공품 제조·정원 관리는 인정 업무가 아니에요)
             <select name="workType">

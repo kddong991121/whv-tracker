@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${title}">워홀 88</title>
     <th:block th:replace="~{fragments/pwa :: tags}"></th:block>
+    <!-- 방문 통계 (GoatCounter): 쿠키 없음, 개인 식별 정보 없음. 서버 설정이 있을 때만 넣는다 -->
+    <script th:if="${!#strings.isEmpty(goatcounterUrl)}" th:attr="data-goatcounter=${goatcounterUrl}"
+            async src="https://gc.zgo.at/count.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
@@ -51,5 +54,6 @@
     <a href="/check" th:classappend="${active == 'check'} ? 'on'"><span class="i">⌖</span>인정 지역</a>
     <a href="/payslip" th:classappend="${active == 'payslip'} ? 'on'"><span class="i">▤</span>페이슬립</a>
 </nav>
+
 </body>
 </html>
