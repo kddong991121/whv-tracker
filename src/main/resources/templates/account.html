@@ -45,7 +45,8 @@
         <h2 style="color:#B42318">탈퇴하기</h2>
         <p class="muted">계정과 모든 근무 기록, 페이슬립에서 읽은 값을 바로 지워요. <b>되돌릴 수 없어요.</b>
             필요하면 먼저 근무 이력 PDF를 받아 두세요.</p>
-        <form method="post" th:action="@{/account/delete}">
+        <!-- 두 번 눌러도 요청은 한 번만 가게 버튼을 막는다 (탈퇴 Deadlock 재발 방지) -->
+        <form method="post" th:action="@{/account/delete}" onsubmit="this.querySelector('button').disabled=true; this.querySelector('button').textContent='지우는 중…';">
             <label class="f" for="confirm">확인을 위해 "탈퇴"를 입력하세요</label>
             <input id="confirm" name="confirm" autocomplete="off" required>
             <button class="btn" type="submit" style="width:100%; margin-top:12px; background:#B42318">모든 기록 지우고 탈퇴</button>
