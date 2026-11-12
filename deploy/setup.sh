@@ -72,7 +72,7 @@ cat > /etc/systemd/system/whv88.service <<'UNIT'
 [Unit]
 Description=whv88 (워홀 88)
 After=network.target mysql.service
-Requires=mysql.service
+Wants=mysql.service
 
 [Service]
 User=whv88
