@@ -95,31 +95,128 @@
     const $ = id => document.getElementById(id);
     const status = $('readStatus');
 
-    // dd/mm/yyyy (호주 표기) → yyyy-mm-dd
+    // 날짜 → yyyy-mm-dd. 호주 표기 dd/mm/yyyy, 그리고 06-DEC-2024, 11 Nov 2024 같은 월 이름 표기.
+    const MONTHS = {jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12};
+    const DATE = String.raw`\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}|\d{1,2}[\s\-](?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?[\s\-]\d{2,4}`;
     function toIso(s) {
-        const m = s.match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/);
-        if (!m) return '';
-        const y = m[3].length === 2 ? '20' + m[3] : m[3];
-        return `${y}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+        let m = s.match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/);
+        let day, mon, year;
+        if (m) { [day, mon, year] = [m[1], m[2], m[3]]; }
+        else {
+            m = s.match(/(\d{1,2})[\s\-]([a-z]{3})[a-z]*\.?[\s\-](\d{2,4})/i);
+            if (!m || !MONTHS[m[2].toLowerCase()]) return '';
+            [day, mon, year] = [m[1], String(MONTHS[m[2].toLowerCase()]), m[3]];
+        }
+        const y = year.length === 2 ? '20' + year : year;
+        return `${y}-${mon.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+
+    // 주소처럼 보이는 줄 (PO BOX, "주 + 4자리 포스트코드", 번지로 시작) — 고용주 이름으로 쓰지 않는다
+    function looksLikeAddress(l) {
+        return /\bP\.?\s?O\.?\s?BOX\b/i.test(l)
+            || /\b(QLD|NSW|VIC|SA|WA|TAS|NT|ACT)\b\s*\d{4}\b/i.test(l)
+            || /^\d+[A-Za-z]?([\/\s]\d+)?\s+\S+/.test(l)
+            || /^(unit|level|floor|suite|shop)\b/i.test(l);
+    }
+
+    // 25.1000 → 25.1, 38.00 → 38
+    function tidyNumber(s) {
+        return s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, '') : s;
+    }
+
+    // 줄 앞의 제목 글자("PAYSLIP", "Payment Advice")와 ABN 이후를 떼어 낸다
+    function cleanEmployer(l) {
+        return l.replace(/ABN.*$/i, '').replace(/^(pay\s*slip|payslip|payment\s*advice|pay\s*advice)\s*/i, '').trim();
+    }
+
+    // 한 줄에서 근무 시간 찾기. 예: "Ordinary 549.94 18.75 29.3300 Hours" → 18.75 (18.75 × 29.33 = 549.94)
+    function hoursOnLine(l) {
+        const nums = [...l.matchAll(/(\$?)(-?\d[\d,]*(?:\.\d+)?)/g)]
+            .map(m => ({v: parseFloat(m[2].replace(/,/g, '')), money: m[1] === '$', dec: (m[2].split('.')[1] || '').length}))
+            .filter(n => !isNaN(n.v) && n.v > 0);
+        for (let i = 0; i < nums.length; i++) for (let j = 0; j < nums.length; j++) for (let k = 0; k < nums.length; k++) {
+            if (i === j || j === k || i === k || nums[i].money) continue;
+            const [h, r, amt] = [nums[i], nums[j], nums[k]];
+            if (Math.abs(h.v * r.v - amt.v) <= 0.02 && (r.money || r.dec > h.dec || (r.dec === h.dec && r.v > h.v))) return h.v;
+        }
+        const after = l.match(/(?:hours|hrs)\s*:?\s*(\d+(?:\.\d+)?)/i);   // "Ord Hours 31.00", "Ordinary hours 25.1000"
+        if (after) return parseFloat(after[1]);
+        const before = l.match(/(\d+(?:\.\d+)?)\s*(?:hours|hrs)\b/i);     // "18.75 Hours"
+        return before ? parseFloat(before[1]) : 0;
     }
 
     function parse(text) {
         const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
         const out = {};
-        const abn = text.match(/ABN[:\s#]*((?:\d\s?){11})/i);
+        // 고용주 1) "PAID BY", "Employer", "Business name", "Company" 제목의 다음 줄 (또는 같은 줄 콜론 뒤)
+        // 제목 뒤에 콜론이 있거나 줄에 제목만 있을 때만 (예: "Employer Superannuation"은 제외)
+        const label = /^(paid\s*by|employer(?:\s*name)?|business\s*name|company(?:\s*name)?)\s*(?::\s*(.*)|$)/i;
+        for (let i = 0; i < lines.length && !out.employer; i++) {
+            const m = lines[i].match(label);
+            if (!m) continue;
+            const candidate = cleanEmployer(m[2] || lines[i + 1] || '');
+            if (candidate && !looksLikeAddress(candidate) && !new RegExp(DATE, 'i').test(candidate)) out.employer = candidate;
+        }
+        // 고용주 2) 위쪽 15줄 안에서 회사 이름 꼴 (Pty Ltd, Limited, Ltd, Inc)
+        for (let i = 0; i < Math.min(lines.length, 15) && !out.employer; i++) {
+            if (/\b(pty\.?\s*(ltd|limited)|limited|ltd|inc)\b\.?/i.test(lines[i]) && !/superannuation|super\b|trustee/i.test(lines[i])) {
+                const m = lines[i].match(/([A-Z0-9&'.,\- ]*?\b[A-Za-z0-9&'.,\- ]*\b(?:pty\.?\s*(?:ltd|limited)|limited|ltd|inc)\b\.?)/i);
+                out.employer = cleanEmployer(m ? m[1] : lines[i]);
+            }
+        }
+        // 고용주 3) ABN 줄: 같은 줄 앞부분, 없으면 위로 올라가며 주소가 아닌 첫 줄
+        // ABN: "ABN: 32 096 900 604" 또는 순서가 뒤바뀐 "14011062338 ABN"
+        const abn = text.match(/ABN[:\s#]*((?:\d\s?){11})/i) || text.match(/((?:\d\s?){11})\s*ABN\b/i);
         if (abn) {
             out.abn = abn[1].replace(/\s/g, '');
-            const i = lines.findIndex(l => /ABN/i.test(l));
-            const before = i > 0 ? lines[i - 1] : '';
-            const sameLine = i >= 0 ? lines[i].replace(/ABN.*$/i, '').trim() : '';
-            out.employer = sameLine || before;
+            if (!out.employer) {
+                const i = lines.findIndex(l => /ABN/i.test(l));
+                const sameLine = i >= 0 ? cleanEmployer(lines[i]) : '';
+                if (sameLine && !looksLikeAddress(sameLine)) out.employer = sameLine;
+                for (let j = i - 1; j >= 0 && !out.employer && j >= i - 5; j--) {
+                    const c = cleanEmployer(lines[j]);
+                    if (c && !looksLikeAddress(c) && !label.test(lines[j])) out.employer = c;
+                }
+            }
         }
-        if (!out.employer) out.employer = lines[0] || '';
-        const d = '\\d{1,2}[\\/.\\-]\\d{1,2}[\\/.\\-]\\d{2,4}';
-        const period = text.match(new RegExp(`(${d})\\s*(?:-|–|to)\\s*(${d})`, 'i'));
-        if (period) { out.start = toIso(period[1]); out.end = toIso(period[2]); }
-        const hours = text.match(/(?:total\s*hours|hours\s*worked|ordinary\s*hours?|hours)[^\d\n]{0,20}(\d+(?:\.\d+)?)/i);
-        if (hours) out.hours = hours[1];
+        if (!out.employer) out.employer = cleanEmployer(lines[0] || '');
+
+        // 기간: PDF 글자 순서가 뒤섞여도 되게, 제목("Pay Period", "Paid From/To")에서 가장 가까운 날짜를 고른다.
+        const dates = [...text.matchAll(new RegExp(DATE, 'gi'))].map(m => ({iso: toIso(m[0]), at: m.index}))
+            .filter(d => d.iso);
+        const near = (re, n) => {
+            const m = text.match(re);
+            if (!m) return [];
+            const at = m.index + m[0].length / 2;
+            const seen = new Set();
+            return dates.slice().sort((x, y) => Math.abs(x.at - at) - Math.abs(y.at - at))
+                .filter(d => !seen.has(d.iso) && seen.add(d.iso)).slice(0, n).map(d => d.iso);
+        };
+        const okRange = (a, b) => a && b && a < b && (new Date(b) - new Date(a)) / 86400000 <= 31;
+        let range = near(/pay\s*period|period\s*(?:dates?)?\s*:/i, 2).sort();
+        if (!okRange(range[0], range[1])) {
+            range = [near(/paid\s*from|period\s*(?:start|from|beginning)|start\s*date|from\s*date/i, 1)[0],
+                     near(/paid\s*to|period\s*(?:end|ending|to)|end\s*date|to\s*date/i, 1)[0]];
+        }
+        if (!okRange(range[0], range[1])) {
+            const m = text.match(new RegExp(`(${DATE})\\s*(?:-|–|to)\\s*(${DATE})`, 'i'));
+            range = m ? [toIso(m[1]), toIso(m[2])] : [];
+        }
+        if (okRange(range[0], range[1])) { out.start = range[0]; out.end = range[1]; }
+
+        // 시간: "Total Hours"가 있으면 그것. 없으면 기본 근무 줄(Ordinary/Ord/Normal)마다 시간을 찾아 더한다.
+        // 줄 안 숫자 순서가 뒤섞여도 되게 "시간 × 시급 = 금액"이 맞는 짝을 찾는다 ($가 붙은 숫자는 돈).
+        const total = text.match(/total\s*hours[^\d\n]{0,20}(\d+(?:\.\d+)?)/i);
+        if (total && parseFloat(total[1]) > 0) out.hours = tidyNumber(total[1]);
+        else {
+            let sum = 0;
+            for (const l of lines) {
+                if (!/^(ordinary|ord\b|normal|base)/i.test(l) || !/\b(hours?|hrs)\b/i.test(l)) continue;
+                const h = hoursOnLine(l);
+                if (h > 0) sum += h;
+            }
+            if (sum > 0) out.hours = tidyNumber(sum.toFixed(2));
+        }
         const type = text.match(/\b(casual|full[\s-]?time|part[\s-]?time)\b/i);
         if (type) out.type = type[1];
         return out;
