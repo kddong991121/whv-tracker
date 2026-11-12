@@ -72,6 +72,34 @@ class HomeWorkPagesTest {
     }
 
     @Test
+    void onboarding_placeThenFirstShift_thenHidden() throws Exception {
+        LocalDate today = LocalDate.now();
+        // 일터·근무가 없으면 ② 일한 곳 추가 폼
+        mvc.perform(get("/")).andExpect(content().string(containsString("처음이세요? 3단계면 끝나요")))
+                .andExpect(content().string(containsString("일한 곳 저장")));
+
+        mvc.perform(post("/work/place").param("next", "home").param("employer", "첫 농장").param("postcode", "4670")
+                        .param("industry", "REGIONAL_PRIMARY_MINING_CONSTRUCTION").param("normalHours", "7.6")
+                        .param("startDate", today.minusDays(3).toString()).param("endDate", today.plusDays(365).toString()))
+                .andExpect(redirectedUrl("/"));
+        // ③ 첫 근무: 어제·오늘 버튼
+        mvc.perform(get("/")).andExpect(content().string(containsString("첫 농장에서 언제 일했나요?")))
+                .andExpect(content().string(containsString("어제 7.6시간")));
+
+        long placeId = ledger.dashboard(owner).records().stream()
+                .filter(r -> r.getEmployerName().equals("첫 농장")).findFirst().orElseThrow().getId();
+        mvc.perform(post("/work/shift").param("next", "home").param("recordId", String.valueOf(placeId))
+                        .param("workDate", today.minusDays(1).toString()).param("workHours", "7.6"))
+                .andExpect(redirectedUrl("/"));
+        // 첫 근무를 넣으면 안내가 사라진다
+        mvc.perform(get("/")).andExpect(content().string(org.hamcrest.Matchers.not(containsString("처음이세요?"))));
+        // next는 정해진 값만: 다른 값이면 원래 화면으로
+        mvc.perform(post("/work/shift").param("next", "https://evil.example").param("recordId", String.valueOf(placeId))
+                        .param("workDate", today.minusDays(2).toString()).param("workHours", "7.6"))
+                .andExpect(redirectedUrl("/work?week=" + today.minusDays(2)));
+    }
+
+    @Test
     void quickShift_today_thenShowsDone() throws Exception {
         LocalDate today = LocalDate.now();
         WorkRecord r = ledger.addCasual(owner, "원탭 농장", "4670", Industry.REGIONAL_PRIMARY_MINING_CONSTRUCTION, 2,

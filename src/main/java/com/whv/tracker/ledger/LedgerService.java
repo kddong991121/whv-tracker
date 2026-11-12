@@ -240,6 +240,32 @@ public class LedgerService {
         return deleted;
     }
 
+    /**
+     * 처음 온 사람 안내용: 지금 준비 중인 비자(visaYear)의 일터와 근무 상태.
+     * @param firstPlace 일한 날 기록 일터 중 처음 만든 것 (없으면 null)
+     * @param hasWork 근무일이 하나라도 있거나, 매일 출근 기간 기록이 있으면 true
+     */
+    public record Onboarding(WorkRecord firstPlace, boolean hasWork) {
+        /** 2 = 일터 추가 단계, 3 = 첫 근무 단계, 0 = 안내 끝 */
+        public int step() {
+            if (hasWork) {
+                return 0;
+            }
+            return firstPlace == null ? 2 : 3;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Onboarding onboarding(AppUser owner, int visaYear) {
+        List<WorkRecord> mine = records.findAllByOwnerOrderByIdDesc(owner).stream()
+                .filter(r -> r.getVisaYear() == visaYear).toList();
+        boolean hasPeriod = mine.stream().anyMatch(r -> r.getMode() == WorkMode.EMPLOYMENT_PERIOD);
+        boolean hasDays = days.findByRecordOwner(owner).stream().anyMatch(d -> d.getRecord().getVisaYear() == visaYear);
+        WorkRecord first = mine.stream().filter(r -> r.getMode() == WorkMode.CASUAL_DAYS)
+                .min(java.util.Comparator.comparing(WorkRecord::getId)).orElse(null);
+        return new Onboarding(first, hasPeriod || hasDays);
+    }
+
     /** 지운 근무 값 (되돌리기용: 같은 값으로 다시 addWorkDay). 플래시 속성으로 세션(DB)에 잠깐 저장되므로 Serializable. */
     public record DeletedShift(long recordId, LocalDate date, BigDecimal hours) implements java.io.Serializable {
     }

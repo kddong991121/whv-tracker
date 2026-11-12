@@ -23,6 +23,86 @@
     </header>
     <form method="post" th:action="@{/logout}" hidden></form>
     <div class="flash ok" th:if="${message}" th:text="${message}"></div>
+    <div class="flash err" th:if="${error}" th:text="${error}"></div>
+
+    <!-- 처음 온 사람 안내: 일터가 없으면 ②, 근무가 없으면 ③. 첫 근무를 넣으면 사라진다 -->
+    <section class="card onboard" th:if="${onboarding.step() != 0}">
+        <h2 style="margin:0 0 4px">처음이세요? 3단계면 끝나요</h2>
+        <p class="muted" style="margin:0 0 14px">1분이면 첫 기록을 넣을 수 있어요.</p>
+
+        <div class="ob-step done">
+            <span class="num">✓</span>
+            <div style="flex:1; min-width:0">
+                <b>준비 중인 비자</b>
+                <form method="post" th:action="@{/account/goal-visa}" class="ob-goal">
+                    <button type="submit" name="goalVisa" value="2" th:classappend="${s.visaYear() == 2} ? 'on'">세컨 (88일)</button>
+                    <button type="submit" name="goalVisa" value="3" th:classappend="${s.visaYear() == 3} ? 'on'">서드 (179일)</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="ob-step" th:classappend="${onboarding.step() == 2} ? 'now' : 'done'">
+            <span class="num" th:text="${onboarding.step() == 2} ? '2' : '✓'">2</span>
+            <div style="flex:1; min-width:0">
+                <b>일한 곳 추가</b>
+                <span class="muted" th:if="${onboarding.step() == 3}" th:text="' · ' + ${onboarding.firstPlace().employerName}"></span>
+                <form th:if="${onboarding.step() == 2}" method="post" th:action="@{/work/place}" class="ob-form"
+                      onsubmit="this.querySelector('button[type=submit]').disabled=true;">
+                    <input type="hidden" name="next" value="home">
+                    <input type="hidden" name="endDate" th:value="${today.plusDays(365)}">
+                    <label class="f">일한 곳 이름</label><input name="employer" required maxlength="100" placeholder="예: Sunny Farm">
+                    <label class="f">포스트코드 (숫자 4자리)</label><input name="postcode" required pattern="[0-9]{4}" inputmode="numeric" placeholder="예: 4350">
+                    <label class="f">업종</label>
+                    <select name="industry">
+                        <option value="REGIONAL_PRIMARY_MINING_CONSTRUCTION">농장·축산·어업·임업·광업·건설</option>
+                        <option value="TOURISM_HOSPITALITY">관광·요식업</option>
+                    </select>
+                    <label class="f">평소 하루 근무 시간</label>
+                    <input type="number" name="normalHours" step="0.1" min="0.5" max="24" value="8" inputmode="decimal" required>
+                    <label class="f">언제부터 일했나요?</label><input type="date" name="startDate" th:value="${today}" required>
+                    <button class="btn" type="submit" style="width:100%; margin-top:14px">일한 곳 저장</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="ob-step" th:classappend="${onboarding.step() == 3} ? 'now'">
+            <span class="num">3</span>
+            <div style="flex:1; min-width:0">
+                <b>첫 근무 넣기</b>
+                <th:block th:if="${onboarding.step() == 3 and onboarding.firstPlace().normalHours != null}">
+                    <p class="muted" style="margin:4px 0 8px" th:text="${onboarding.firstPlace().employerName} + '에서 언제 일했나요?'"></p>
+                    <div class="ob-days">
+                        <form th:each="d : ${ {yesterday, today} }" th:if="${!d.isBefore(onboarding.firstPlace().startDate) and !d.isAfter(onboarding.firstPlace().endDate)}"
+                              method="post" th:action="@{/work/shift}" onsubmit="this.querySelector('button').disabled=true;">
+                            <input type="hidden" name="next" value="home">
+                            <input type="hidden" name="recordId" th:value="${onboarding.firstPlace().id}">
+                            <input type="hidden" name="workDate" th:value="${d}">
+                            <input type="hidden" name="workHours" th:value="${onboarding.firstPlace().normalHours}">
+                            <button class="btn" type="submit"
+                                    th:text="(${d == today} ? '오늘 ' : '어제 ') + ${onboarding.firstPlace().normalHours.stripTrailingZeros().toPlainString()} + '시간'"></button>
+                        </form>
+                    </div>
+                    <a href="/work" style="display:inline-block; margin-top:8px; font-size:14px">다른 날짜·여러 날은 근무 기록에서 →</a>
+                </th:block>
+            </div>
+        </div>
+    </section>
+    <style>
+        .onboard { border:2px solid #2E6B52; }
+        .ob-step { display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-top:1px solid #EFEAE0; color:#8B95A1; }
+        .ob-step.now, .ob-step.done { color:#191F28; }
+        .ob-step .num { width:26px; height:26px; flex-shrink:0; border-radius:50%; background:#E5E8EB; color:#4E5968;
+            display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; }
+        .ob-step.now .num { background:#2E6B52; color:#fff; }
+        .ob-step.done .num { background:#E6F0EA; color:#2E6B52; }
+        .ob-goal { display:flex; gap:8px; margin-top:8px; }
+        .ob-goal button { flex:1; height:38px; border:1px solid #D1D6DB; border-radius:10px; background:#fff; font-size:14px; font-family:inherit; cursor:pointer; }
+        .ob-goal button.on { border-color:#2E6B52; background:#F1F7F3; color:#2E6B52; font-weight:700; }
+        .ob-form { margin-top:4px; }
+        .ob-days { display:flex; gap:8px; }
+        .ob-days form { flex:1; }
+        .ob-days .btn { width:100%; }
+    </style>
 
     <section class="card">
         <p style="margin:0 0 16px; font-size:18px; font-weight:700" th:if="${!s.targetMet()}">
@@ -118,7 +198,7 @@
     <p class="muted" style="margin:16px 4px" th:text="${disclaimer}"></p>
     <p class="muted" style="margin:0 4px"><a href="/privacy">개인정보처리방침</a><th:block th:if="${!#strings.isEmpty(feedbackUrl)}"> · <a th:href="${feedbackUrl}" target="_blank" rel="noopener">의견 보내기</a></th:block></p>
 </div>
-<a class="fab" href="/work">+ 근무 추가</a>
+<a th:if="${onboarding.step() == 0}" class="fab" href="/work">+ 근무 추가</a>
 <nav th:replace="~{fragments/ui :: nav('home')}"></nav>
 </body>
 </html>

@@ -88,6 +88,10 @@ public class HomeController {
         model.addAttribute("places", places(dashboard, goal));
         // 원탭 기록 버튼 (마지막 일터 · 오늘 · 평소 시간). 후보가 없으면 버튼을 숨긴다.
         model.addAttribute("quick", ledger.quickShift(owner, goal, LocalDate.now()).orElse(null));
+        // 처음 온 사람 안내 (일터가 없으면 2단계, 근무가 없으면 3단계, 다 했으면 숨김)
+        LedgerService.Onboarding onboarding = ledger.onboarding(owner, goal);
+        model.addAttribute("onboarding", onboarding);
+        model.addAttribute("yesterday", today.minusDays(1));
         return "home";
     }
 

@@ -151,9 +151,10 @@ public class WorkController {
     @PostMapping("/work/shift")
     public String addShift(Authentication authentication, @RequestParam long recordId,
                            @RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate workDate,
-                           @RequestParam BigDecimal workHours, RedirectAttributes redirect) {
+                           @RequestParam BigDecimal workHours, @RequestParam(required = false) String next,
+                           RedirectAttributes redirect) {
         run(authentication, redirect, owner -> ledger.addWorkDay(owner, recordId, workDate, workHours), "근무를 추가했어요.");
-        return "redirect:/work?week=" + workDate;
+        return backHome(next) ? "redirect:/" : "redirect:/work?week=" + workDate;
     }
 
     /** 지우고, 화면 아래에 "되돌리기"를 띄울 값(일터·날짜·시간)을 넘긴다. 확인창은 띄우지 않는다. */
@@ -205,10 +206,16 @@ public class WorkController {
                            @RequestParam BigDecimal normalHours,
                            @RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate startDate,
                            @RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate endDate,
+                           @RequestParam(required = false) String next,
                            RedirectAttributes redirect) {
         run(authentication, redirect, owner -> ledger.addCasual(owner, employer, postcode, industry, owner.getGoalVisa(), startDate,
                 endDate, 5, null, null, null, normalHours, workType, false), "일터를 추가했어요.");
-        return "redirect:/work?week=" + startDate;
+        return backHome(next) ? "redirect:/" : "redirect:/work?week=" + startDate;
+    }
+
+    /** 처음 온 사람 안내(홈)에서 보낸 요청이면 홈으로 돌려보낸다. 정해진 값만 받는다 (다른 주소로 보내는 데 쓰이지 않게). */
+    private static boolean backHome(String next) {
+        return "home".equals(next);
     }
 
     @ExceptionHandler({BindException.class, MethodArgumentTypeMismatchException.class,

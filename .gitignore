@@ -4,3 +4,9 @@ storage/
 .env
 application-local.properties
 .claude/settings.local.json
+# 비밀 키·개인 자료는 저장소에 넣지 않는다
+*-key.json
+*.pem
+docs/sources/*.xlsx
+*.pdf
+!src/main/resources/**/*.pdf
