@@ -41,6 +41,10 @@ public class AppUser {
     @Column(name = "goal_visa", nullable = false)
     private int goalVisa = 2;
 
+    /** 운영 통계: 마지막으로 사이트를 쓴 시각 (하루 한 번 갱신, LastSeenInterceptor). */
+    @Column(name = "last_seen_at")
+    private LocalDateTime lastSeenAt;
+
     protected AppUser() {
     }
 
@@ -49,6 +53,7 @@ public class AppUser {
         this.email = email;
         this.displayName = displayName;
         this.createdAt = LocalDateTime.now();
+        this.lastSeenAt = this.createdAt;
     }
 
     void refresh(String email, String displayName) {

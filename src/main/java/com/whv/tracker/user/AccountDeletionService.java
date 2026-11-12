@@ -43,6 +43,8 @@ public class AccountDeletionService {
         em.flush();
         em.detach(locked);
         em.createQuery("delete from AppUser a where a.id = :u").setParameter("u", userId).executeUpdate();
+        // 운영 통계용: 탈퇴 시각만 남긴다 (누구인지는 남기지 않는다)
+        em.persist(new com.whv.tracker.admin.DeletedAccountLog(java.time.LocalDateTime.now()));
         // 몇 번 계정이 탈퇴했는지만 남긴다 (이메일·이름 같은 개인정보는 남기지 않는다)
         log.info("account deleted: userId={}", userId);
         return true;
