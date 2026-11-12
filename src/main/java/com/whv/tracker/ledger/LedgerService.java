@@ -231,11 +231,64 @@ public class LedgerService {
 
     /** 일한 날 근무 1행 삭제 (본인 기록만). */
     @Transactional
-    public void deleteWorkDay(AppUser owner, long workDayId) {
+    public DeletedShift deleteWorkDay(AppUser owner, long workDayId) {
         WorkDay d = days.findById(workDayId)
                 .filter(x -> x.getRecord().getOwner().getId().equals(owner.getId()))
                 .orElseThrow(() -> new IllegalArgumentException("근무를 찾을 수 없습니다."));
+        DeletedShift deleted = new DeletedShift(d.getRecord().getId(), d.getWorkDate(), d.getWorkHours());
         days.delete(d);
+        return deleted;
+    }
+
+    /** 지운 근무 값 (되돌리기용: 같은 값으로 다시 addWorkDay). 플래시 속성으로 세션(DB)에 잠깐 저장되므로 Serializable. */
+    public record DeletedShift(long recordId, LocalDate date, BigDecimal hours) implements java.io.Serializable {
+    }
+
+    /**
+     * 원탭 기록 후보: 지금 준비 중인 비자(visaYear)의 일한 날 기록 일터 중 마지막으로 근무를 넣은 곳.
+     * 그 일터의 고용 기간에 today가 들어 있고 평소 근무 시간이 있어야 한다. 없으면 비어 있다.
+     */
+    @Transactional(readOnly = true)
+    public java.util.Optional<QuickShift> quickShift(AppUser owner, int visaYear, LocalDate today) {
+        return days.findByRecordOwner(owner).stream()
+                .filter(d -> d.getRecord().getMode() == WorkMode.CASUAL_DAYS && d.getRecord().getVisaYear() == visaYear)
+                .max(java.util.Comparator.comparing(WorkDay::getWorkDate).thenComparing(WorkDay::getId))
+                .map(WorkDay::getRecord)
+                .filter(r -> r.getNormalHours() != null
+                        && !today.isBefore(r.getStartDate()) && !today.isAfter(r.getEndDate()))
+                .map(r -> new QuickShift(r.getId(), r.getEmployerName(), r.getNormalHours(),
+                        days.findByRecordOwnerAndWorkDate(owner, today).stream()
+                                .anyMatch(d -> d.getRecord().getId().equals(r.getId()))));
+    }
+
+    /** @param doneToday 오늘 이 일터 근무가 이미 있으면 true (버튼 대신 "기록 완료" 표시). */
+    public record QuickShift(long recordId, String employer, BigDecimal hours, boolean doneToday) {
+    }
+
+    /**
+     * 지난주(weekStart − 7일 ~ weekStart − 1일) 근무를 요일·시간 그대로 이번 주에 넣는다.
+     * 이미 있는 날, 고용 기간 밖, 하루 24시간 초과 등 addWorkDay 규칙에 걸리는 날은 건너뛴다.
+     * @return [넣은 수, 건너뛴 수]
+     */
+    @Transactional
+    public int[] copyPreviousWeek(AppUser owner, LocalDate weekStart) {
+        LocalDate from = weekStart.minusDays(7);
+        List<WorkDay> previous = days.findByRecordOwner(owner).stream()
+                .filter(d -> !d.getWorkDate().isBefore(from) && d.getWorkDate().isBefore(weekStart))
+                .filter(d -> d.getRecord().getMode() == WorkMode.CASUAL_DAYS)
+                .sorted(java.util.Comparator.comparing(WorkDay::getWorkDate).thenComparing(WorkDay::getId))
+                .toList();
+        int added = 0;
+        int skipped = 0;
+        for (WorkDay d : previous) {
+            try {
+                addWorkDay(owner, d.getRecord().getId(), d.getWorkDate().plusDays(7), d.getWorkHours());
+                added++;
+            } catch (IllegalArgumentException e) {
+                skipped++;
+            }
+        }
+        return new int[] {added, skipped};
     }
 
     /** 하루 판정 공개용 (화면에서 짧은 근무 표시). */

@@ -57,7 +57,7 @@ public class WorkController {
     record Day(String label, String date, String badge, String badgeCss, String note, List<Shift> shifts) {
     }
 
-    record Place(long id, String name, String detail, String color, boolean counted, String status) {
+    record Place(long id, String name, String detail, String color, boolean counted, String status, String normalHours) {
     }
 
     @GetMapping("/work")
@@ -81,7 +81,8 @@ public class WorkController {
             boolean counted = dashboard.countedByRecord().getOrDefault(r.getId(), false);
             places.add(new Place(r.getId(), r.getEmployerName(),
                     (r.getNormalHours() == null ? "평소 시간 미입력" : "하루 " + r.getNormalHours().stripTrailingZeros().toPlainString() + "시간") + " · " + r.getPostcode(),
-                    COLORS[i % COLORS.length], counted, dashboard.statusByRecord().get(r.getId()).message()));
+                    COLORS[i % COLORS.length], counted, dashboard.statusByRecord().get(r.getId()).message(),
+                    r.getNormalHours() == null ? "" : r.getNormalHours().stripTrailingZeros().toPlainString()));
         }
 
         List<Day> days = new ArrayList<>();
@@ -155,11 +156,46 @@ public class WorkController {
         return "redirect:/work?week=" + workDate;
     }
 
+    /** 지우고, 화면 아래에 "되돌리기"를 띄울 값(일터·날짜·시간)을 넘긴다. 확인창은 띄우지 않는다. */
     @PostMapping("/work/shift/{id}/delete")
     public String deleteShift(Authentication authentication, @PathVariable long id,
                               @RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate week, RedirectAttributes redirect) {
-        run(authentication, redirect, owner -> ledger.deleteWorkDay(owner, id), "근무를 지웠어요.");
+        run(authentication, redirect, owner -> {
+            LedgerService.DeletedShift d = ledger.deleteWorkDay(owner, id);
+            redirect.addFlashAttribute("undo", d);
+        }, "근무를 지웠어요.");
         return "redirect:/work?week=" + week;
+    }
+
+    /** 홈 원탭 기록: 마지막 일터에 오늘, 평소 근무 시간으로 넣는다. 서버 날짜는 Australia/Sydney 기준. */
+    @PostMapping("/work/today")
+    public String addToday(Authentication authentication, @RequestParam long recordId, RedirectAttributes redirect) {
+        LocalDate today = LocalDate.now();
+        run(authentication, redirect, owner -> {
+            LedgerService.QuickShift q = ledger.quickShift(owner, owner.getGoalVisa(), today)
+                    .filter(x -> x.recordId() == recordId)
+                    .orElseThrow(() -> new IllegalArgumentException("오늘 바로 넣을 수 있는 일터가 아니에요. 근무 기록에서 넣어 주세요."));
+            ledger.addWorkDay(owner, q.recordId(), today, q.hours());
+        }, "오늘 근무를 넣었어요 ✓");
+        return "redirect:/";
+    }
+
+    /** 지난주 근무를 이번 주에 그대로 넣는다. week = 이번 주 월요일. */
+    @PostMapping("/work/copy-week")
+    public String copyWeek(Authentication authentication,
+                           @RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate week, RedirectAttributes redirect) {
+        LocalDate monday = week.with(java.time.DayOfWeek.MONDAY);
+        int[] r = new int[2];
+        run(authentication, redirect, owner -> {
+            int[] x = ledger.copyPreviousWeek(owner, monday);
+            r[0] = x[0];
+            r[1] = x[1];
+        }, "");
+        if (!redirect.getFlashAttributes().containsKey("error")) {
+            redirect.addFlashAttribute("message", r[0] == 0 && r[1] == 0 ? "지난주에 넣은 근무가 없어요."
+                    : r[0] + "일 넣었어요" + (r[1] > 0 ? " · " + r[1] + "일 건너뜀 (이미 있거나 넣을 수 없는 날)" : ""));
+        }
+        return "redirect:/work?week=" + monday;
     }
 
     /** 일한 날 기록 일터 추가. 차수는 지금 준비 중인 비자(세컨 2 / 서드 3), 기준 주당 근무일은 5로 저장한다. */

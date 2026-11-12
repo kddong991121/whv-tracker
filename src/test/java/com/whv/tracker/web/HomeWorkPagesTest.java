@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.whv.tracker.ledger.Industry;
@@ -68,6 +69,58 @@ class HomeWorkPagesTest {
                 .andExpect(content().string(containsString("짧게 일한 날이 1일 있어요")))
                 .andExpect(content().string(containsString("오전 농장")))
                 .andExpect(content().string(containsString(HomeController.DISCLAIMER)));
+    }
+
+    @Test
+    void quickShift_today_thenShowsDone() throws Exception {
+        LocalDate today = LocalDate.now();
+        WorkRecord r = ledger.addCasual(owner, "원탭 농장", "4670", Industry.REGIONAL_PRIMARY_MINING_CONSTRUCTION, 2,
+                today.minusDays(20), today.plusDays(20), 5, null, null, null, new BigDecimal("7.6"), null, false);
+        // 근무를 한 번도 안 넣었으면 원탭 버튼이 없다
+        mvc.perform(get("/")).andExpect(content().string(org.hamcrest.Matchers.not(containsString("/work/today"))));
+
+        ledger.addWorkDay(owner, r.getId(), today.minusDays(1), new BigDecimal("7.6"));
+        mvc.perform(get("/")).andExpect(content().string(containsString("/work/today")))
+                .andExpect(content().string(containsString("7.6시간")));
+
+        mvc.perform(post("/work/today").param("recordId", String.valueOf(r.getId())))
+                .andExpect(redirectedUrl("/")).andExpect(flash().attribute("message", "오늘 근무를 넣었어요 ✓"));
+        mvc.perform(get("/")).andExpect(content().string(containsString("기록 완료 ✓")));
+        // 같은 날 또 누르면 거부 (이미 있음)
+        mvc.perform(post("/work/today").param("recordId", String.valueOf(r.getId())))
+                .andExpect(flash().attributeExists("error"));
+    }
+
+    @Test
+    void copyPreviousWeek_copiesAndSkipsExisting() throws Exception {
+        LocalDate monday = LocalDate.of(2026, 11, 9);
+        WorkRecord r = ledger.addCasual(owner, "복사 농장", "4670", Industry.REGIONAL_PRIMARY_MINING_CONSTRUCTION, 2,
+                monday.minusDays(14), monday.plusDays(14), 5, null, null, null, new BigDecimal("8"), null, false);
+        ledger.addWorkDay(owner, r.getId(), monday.minusDays(7), new BigDecimal("8")); // 지난주 월
+        ledger.addWorkDay(owner, r.getId(), monday.minusDays(6), new BigDecimal("6")); // 지난주 화
+        ledger.addWorkDay(owner, r.getId(), monday, new BigDecimal("8"));              // 이번 주 월은 이미 있음
+
+        mvc.perform(post("/work/copy-week").param("week", monday.plusDays(2).toString()))
+                .andExpect(redirectedUrl("/work?week=" + monday))
+                .andExpect(flash().attribute("message", "1일 넣었어요 · 1일 건너뜀 (이미 있거나 넣을 수 없는 날)"));
+        org.assertj.core.api.Assertions.assertThat(
+                ledger.dashboard(owner).records().stream().filter(x -> x.getId().equals(r.getId())).count()).isEqualTo(1);
+    }
+
+    @Test
+    void deleteShift_offersUndo_withSameValues() throws Exception {
+        LocalDate day = LocalDate.of(2026, 11, 10);
+        WorkRecord r = ledger.addCasual(owner, "되돌리기 농장", "4670", Industry.REGIONAL_PRIMARY_MINING_CONSTRUCTION, 2,
+                day.minusDays(5), day.plusDays(5), 5, null, null, null, new BigDecimal("8"), null, false);
+        long id = ledger.addWorkDay(owner, r.getId(), day, new BigDecimal("6.5")).getId();
+
+        mvc.perform(post("/work/shift/" + id + "/delete").param("week", day.toString()))
+                .andExpect(flash().attribute("undo", new com.whv.tracker.ledger.LedgerService.DeletedShift(
+                        r.getId(), day, new BigDecimal("6.5"))));
+        // 되돌리기 = 같은 값으로 다시 넣기
+        mvc.perform(post("/work/shift").param("recordId", String.valueOf(r.getId()))
+                        .param("workDate", day.toString()).param("workHours", "6.5"))
+                .andExpect(flash().attribute("message", "근무를 추가했어요."));
     }
 
     @Test

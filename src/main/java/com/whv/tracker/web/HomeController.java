@@ -86,6 +86,8 @@ public class HomeController {
         model.addAttribute("month", month);
         model.addAttribute("cells", calendarCells(month, today, ledger.calendar(owner, month, goal)));
         model.addAttribute("places", places(dashboard, goal));
+        // 원탭 기록 버튼 (마지막 일터 · 오늘 · 평소 시간). 후보가 없으면 버튼을 숨긴다.
+        model.addAttribute("quick", ledger.quickShift(owner, goal, LocalDate.now()).orElse(null));
         return "home";
     }
 

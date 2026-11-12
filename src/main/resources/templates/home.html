@@ -43,6 +43,27 @@
         <p class="label" style="margin:14px 0 0" th:if="${startedDays == null}">아직 기록이 없어요. 아래 "근무 추가"로 시작하세요.</p>
     </section>
 
+    <!-- 원탭 기록: 마지막 일터에 오늘, 평소 근무 시간으로 바로 넣는다 -->
+    <form th:if="${quick != null and !quick.doneToday()}" method="post" th:action="@{/work/today}" style="margin-top:12px"
+          onsubmit="this.querySelector('button').disabled=true;">
+        <input type="hidden" name="recordId" th:value="${quick.recordId()}">
+        <button class="btn quick" type="submit">
+            <span>오늘 <b th:text="${quick.employer()}"></b> <b th:text="${quick.hours().stripTrailingZeros().toPlainString()} + '시간'"></b> 일했어요</span>
+            <span aria-hidden="true">＋</span>
+        </button>
+    </form>
+    <div th:if="${quick != null and quick.doneToday()}" class="quick done">
+        <span>오늘 <b th:text="${quick.employer()}"></b> 기록 완료 ✓</span><a href="/work">고치기</a>
+    </div>
+    <style>
+        .btn.quick { width:100%; height:auto; min-height:56px; display:flex; justify-content:space-between; align-items:center;
+            gap:8px; padding:12px 18px; font-size:16px; font-weight:500; text-align:left; background:#2E6B52; }
+        .btn.quick b { font-weight:800; }
+        .quick.done { margin-top:12px; display:flex; justify-content:space-between; align-items:center; padding:14px 18px;
+            border-radius:14px; background:#E6F0EA; color:#2E6B52; font-size:15px; }
+        .quick.done a { color:#2E6B52; font-size:14px; }
+    </style>
+
     <div class="grid2" style="margin-top:12px">
         <section class="card" style="margin:0">
             <span class="label">비자 만료까지</span>

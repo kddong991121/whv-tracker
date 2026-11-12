@@ -25,7 +25,7 @@
 </style>
 <div class="app">
     <header class="top"><div><div class="sub">날짜를 누르면 근무를 넣을 수 있어요</div><h1>근무 기록</h1></div></header>
-    <div class="flash ok" th:if="${message}" th:text="${message}"></div>
+    <div class="flash ok" th:if="${message != null and undo == null}" th:text="${message}"></div>
     <div class="flash err" th:if="${error}" th:text="${error}"></div>
 
     <!-- 이번 주 합계를 맨 위에, 그다음 날짜별 기록, 일터 목록은 접어서 아래에 둔다 -->
@@ -44,6 +44,12 @@
             </span>
         </div>
         <a class="notice" style="margin-top:12px" href="#places" th:if="${places.isEmpty()}">먼저 아래 '내 일터'에서 일한 곳을 추가하세요.</a>
+        <!-- 지난주 근무를 요일·시간 그대로 이번 주에 넣는다 -->
+        <form th:if="${!places.isEmpty()}" method="post" th:action="@{/work/copy-week}" style="margin-top:12px"
+              onsubmit="this.querySelector('button').disabled=true;">
+            <input type="hidden" name="week" th:value="${monday}">
+            <button type="submit" class="copy-week">↻ 지난주와 똑같이 넣기</button>
+        </form>
         <div class="day" th:each="d : ${days}">
             <details th:if="${!places.isEmpty()}">
                 <summary>
@@ -55,9 +61,15 @@
                 </summary>
                 <form method="post" th:action="@{/work/shift}" class="addrow">
                     <input type="hidden" name="workDate" th:value="${d.date()}">
-                    <select name="recordId" aria-label="일터"><option th:each="p : ${places}" th:value="${p.id()}" th:text="${p.name()}"></option></select>
-                    <input type="number" name="workHours" step="0.5" min="0.5" max="24" value="8" aria-label="근무 시간" required>
+                    <select name="recordId" aria-label="일터"><option th:each="p : ${places}" th:value="${p.id()}" th:text="${p.name()}" th:attr="data-normal=${p.normalHours()}"></option></select>
+                    <input type="number" name="workHours" step="0.1" min="0.5" max="24" value="8" inputmode="decimal" aria-label="근무 시간" required>
                     <button class="btn" type="submit">추가</button>
+                    <div class="chips" style="grid-column:1 / -1">
+                        <button type="button" class="chip" data-h="4">4시간</button>
+                        <button type="button" class="chip" data-h="6">6시간</button>
+                        <button type="button" class="chip" data-h="8">8시간</button>
+                    </div>
+                    <p class="short-hint" style="grid-column:1 / -1" hidden></p>
                 </form>
             </details>
             <div class="row" th:if="${places.isEmpty()}"><b style="font-size:15px" th:text="${d.label()}"></b></div>
@@ -99,7 +111,7 @@
                 <label class="f">농장 일이면 작업 종류</label>
                 <select name="workType"><option value="">해당 없음</option>
                     <option th:each="w : ${workTypes}" th:value="${w.name()}" th:text="${w.label()}"></option></select>
-                <label class="f">평소 하루 근무 시간</label><input type="number" name="normalHours" step="0.5" min="0.5" max="24" value="8" required>
+                <label class="f">평소 하루 근무 시간</label><input type="number" name="normalHours" step="0.1" min="0.5" max="24" value="8" inputmode="decimal" required>
                 <label class="f">일한 기간 (시작)</label><input type="date" name="startDate" required>
                 <label class="f">일한 기간 (끝, 아직 일하면 예정일)</label><input type="date" name="endDate" required>
                 <button class="btn" type="submit" style="width:100%; margin-top:14px">일터 저장</button>
@@ -115,5 +127,53 @@
     <p class="muted" style="margin:0 4px" th:text="${disclaimer}"></p>
 </div>
 <nav th:replace="~{fragments/ui :: nav('work')}"></nav>
+<!-- 지운 직후 5초 동안 "되돌리기" (같은 값으로 다시 넣기) -->
+<form th:if="${undo != null}" id="undo" class="toast" method="post" th:action="@{/work/shift}">
+    <input type="hidden" name="recordId" th:value="${undo.recordId()}">
+    <input type="hidden" name="workDate" th:value="${undo.date()}">
+    <input type="hidden" name="workHours" th:value="${undo.hours()}">
+    <span>근무를 지웠어요</span><button type="submit">되돌리기</button>
+</form>
+<style>
+    .copy-week { width:100%; height:40px; border:1px dashed #2E6B52; border-radius:12px; background:#F1F7F3; color:#2E6B52;
+        font-size:14px; font-weight:700; font-family:inherit; cursor:pointer; }
+    .chips { display:flex; gap:8px; margin-top:8px; }
+    .chip { flex:1; height:36px; border:1px solid #D1D6DB; border-radius:10px; background:#fff; font-size:14px; font-family:inherit; cursor:pointer; }
+    .chip:active { background:#F1F7F3; }
+    .short-hint { margin:6px 0 0; font-size:13px; color:#92400E; }
+    .toast { position:fixed; left:16px; right:16px; bottom:84px; z-index:20; max-width:448px; margin:0 auto; display:flex;
+        justify-content:space-between; align-items:center; padding:14px 18px; border-radius:14px; background:#191F28; color:#fff;
+        font-size:15px; transition:opacity .3s; }
+    .toast button { border:0; background:none; color:#7FB3FF; font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; }
+</style>
+<script>
+(function () {
+    // 시간 칩: 누르면 시간 칸을 채우고, 일터 평소 시간보다 짧으면 안내를 띄운다
+    document.querySelectorAll('form.addrow').forEach(function (f) {
+        var hours = f.querySelector('input[name="workHours"]');
+        var place = f.querySelector('select[name="recordId"]');
+        var hint = f.querySelector('.short-hint');
+        function check() {
+            var opt = place && place.options[place.selectedIndex];
+            var normal = opt ? parseFloat(opt.getAttribute('data-normal')) : NaN;
+            var h = parseFloat(hours.value);
+            if (!isNaN(normal) && !isNaN(h) && h < normal) {
+                hint.textContent = '평소(' + normal + '시간)보다 짧아서 인정 안 될 수 있어요';
+                hint.hidden = false;
+            } else {
+                hint.hidden = true;
+            }
+        }
+        f.querySelectorAll('.chip').forEach(function (c) {
+            c.addEventListener('click', function () { hours.value = c.getAttribute('data-h'); check(); });
+        });
+        hours.addEventListener('input', check);
+        if (place) place.addEventListener('change', check);
+    });
+    // 되돌리기 토스트는 5초 뒤 사라진다
+    var undo = document.getElementById('undo');
+    if (undo) setTimeout(function () { undo.style.opacity = '0'; setTimeout(function () { undo.remove(); }, 300); }, 5000);
+})();
+</script>
 </body>
 </html>
