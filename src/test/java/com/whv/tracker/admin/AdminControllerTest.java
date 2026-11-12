@@ -49,6 +49,7 @@ class AdminControllerTest {
                 })))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("전체 가입자")))
+                .andExpect(content().string(containsString("다시 온 사람")))
                 .andExpect(content().string(not(containsString("someone@example.com"))))
                 .andExpect(content().string(not(containsString("홍길동"))));
     }

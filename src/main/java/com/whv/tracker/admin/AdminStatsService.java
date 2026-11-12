@@ -25,7 +25,22 @@ public class AdminStatsService {
 
     /** @param signupsByDay 최근 14일 날짜별 가입 수 (오래된 날 먼저) */
     public record Stats(long totalUsers, long todaySignups, long activeLast7Days, long secondGoal, long thirdGoal,
-                        long usersWithRecords, long deletedLast30Days, List<DayCount> signupsByDay) {
+                        long usersWithRecords, long deletedLast30Days, List<DayCount> signupsByDay,
+                        long returnedUsers, long recordedLast7Days) {
+
+        /** 가입한 날보다 뒤에 또 온 사람 비율(%). 가입자가 없으면 0. */
+        public long returnedPercent() {
+            return percent(returnedUsers, totalUsers);
+        }
+
+        /** 근무를 넣은 사람 중 최근 7일에 또 적은 사람 비율(%). */
+        public long recordedLast7Percent() {
+            return percent(recordedLast7Days, usersWithRecords);
+        }
+
+        private static long percent(long part, long whole) {
+            return whole == 0 ? 0 : Math.round(part * 100.0 / whole);
+        }
 
         /** 막대 높이(%) 계산용: 14일 중 가장 많은 날의 가입 수 (0이면 1). */
         public long maxDaily() {
@@ -45,6 +60,10 @@ public class AdminStatsService {
         long second = count("select count(u) from AppUser u where u.goalVisa = 2");
         long third = count("select count(u) from AppUser u where u.goalVisa = 3");
         long withRecords = count("select count(distinct r.owner.id) from WorkRecord r");
+        long returned = count("select count(u) from AppUser u where u.lastSeenAt is not null"
+                + " and cast(u.lastSeenAt as LocalDate) > cast(u.createdAt as LocalDate)");
+        long recorded7 = count("select count(distinct d.record.owner.id) from WorkDay d where d.createdAt >= ?1",
+                now.minusDays(7));
         long deleted = count("select count(d) from DeletedAccountLog d where d.deletedAt >= ?1", now.minusDays(30));
 
         LocalDate from = now.toLocalDate().minusDays(13);
@@ -60,7 +79,7 @@ public class AdminStatsService {
         }
         List<DayCount> days = new ArrayList<>();
         byDay.forEach((d, c) -> days.add(new DayCount(d, c)));
-        return new Stats(total, today, active, second, third, withRecords, deleted, days);
+        return new Stats(total, today, active, second, third, withRecords, deleted, days, returned, recorded7);
     }
 
     private long count(String jpql, Object... params) {

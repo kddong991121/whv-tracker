@@ -23,3 +23,34 @@
 
 ## 설정 (서버)
 `echo 'WHV_ADMIN_EMAIL=<사이트에 로그인하는 구글 이메일>' | sudo tee -a /etc/whv88/whv88.env` 후 재시작.
+
+## 재방문 지표 추가 (2026-11-12, PRD 4.9b)
+
+### 무엇을 더했나
+- /admin "다시 쓰는지" 카드: **다시 온 사람**(가입한 날보다 뒤에 또 방문), **최근 7일 기록한 사람**.
+- Flyway V11: `work_day.created_at` (근무를 적은 시각). 기존 행은 NULL이라 배포 뒤부터 쌓인다.
+
+### 핵심 코드
+```
+WorkDay 저장 ──@PrePersist──▶ created_at = now()
+AdminStatsService.stats(now)
+  returned  = users 중 cast(last_seen_at as date) > cast(created_at as date)
+  recorded7 = work_day.created_at >= now-7일 인 근무의 주인(distinct owner)
+  비율      = Stats.returnedPercent(), recordedLast7Percent()  (분모 0이면 0)
+```
+- `@PrePersist`: JPA가 INSERT 직전에 부르는 콜백. 서비스 코드(addWorkDay, 되돌리기, 지난주 복사, 원탭 기록) 어디서 저장하든 한 곳에서 시각이 찍힌다.
+- `cast(... as LocalDate)`: Hibernate 6 HQL 문법. MySQL·H2 모두 `cast(x as date)`로 바뀐다. 시각을 날짜로 잘라서 "가입한 날과 다른 날"을 비교한다.
+- 개인정보는 세지 않고 숫자만 꺼낸다(기존 원칙 유지).
+
+### 한계
+- `last_seen_at`은 마지막 방문일 하나뿐이라 "매주 오는지"(코호트)는 못 본다.
+- 날짜 기준은 서버 시간대(시드니).
+
+### 테스트
+- `AdminStatsServiceTest`: 사흘 전 가입·오늘 방문 1명만 "다시 온 사람", 방금 적은 근무는 최근 7일에 잡히고 8일 전으로 바꾸면 빠진다.
+- `AdminControllerTest`: 화면에 "다시 온 사람" 표시.
+
+### 셀프 리뷰
+- 버그: 분모 0 나누기 → `percent()`에서 0 처리.
+- 보안: /admin 접근 규칙은 그대로(관리자 이메일 아니면 404).
+- 누락: 화면 스크린샷은 관리자 로그인이 필요해 MockMvc 렌더링 확인으로 대신함.
