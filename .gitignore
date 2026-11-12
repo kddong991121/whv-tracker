@@ -10,3 +10,8 @@ application-local.properties
 docs/sources/*.xlsx
 *.pdf
 !src/main/resources/**/*.pdf
+
+.classpath
+.project
+.settings/
+.claude/

@@ -27,7 +27,20 @@
     <section class="card">
         <h2>1. PDF 고르기</h2>
         <!-- name 속성이 없고 폼 밖에 있어서 파일은 서버로 가지 않는다 -->
-        <input type="file" id="pdf" accept="application/pdf" aria-label="페이슬립 PDF">
+        <label class="pick" for="pdf">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 18v-6M9 15l3-3 3 3"/></svg>
+            <span><b>PDF 고르기</b><small id="pdfName">페이슬립 PDF를 골라 주세요</small></span>
+        </label>
+        <input type="file" id="pdf" accept="application/pdf" class="sr-only" aria-label="페이슬립 PDF">
+        <style>
+            .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+            .pick { display:flex; align-items:center; gap:14px; padding:18px; border:2px dashed #2E6B52; border-radius:16px;
+                background:#F1F7F3; color:#2E6B52; cursor:pointer; }
+            .pick svg { width:32px; height:32px; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+            .pick b { display:block; font-size:17px; }
+            .pick small { display:block; font-size:13px; color:#4E5968; margin-top:2px; word-break:break-all; }
+            #pdf:focus-visible + * , .pick:focus-within { outline:2px solid #2E6B52; outline-offset:2px; }
+        </style>
         <p class="muted" id="readStatus">PDF를 고르면 고용주, 급여 기간, 총 근무 시간을 자동으로 채워요. 사진(JPG·PNG)은 아래에 직접 입력하세요.</p>
     </section>
 
@@ -221,6 +234,12 @@
         if (type) out.type = type[1];
         return out;
     }
+
+    // 고른 파일 이름을 버튼 안에 보여준다
+    $('pdf')?.addEventListener('change', e => {
+        const f = e.target.files[0];
+        $('pdfName').textContent = f ? f.name : '페이슬립 PDF를 골라 주세요';
+    });
 
     $('pdf')?.addEventListener('change', async e => {
         const file = e.target.files[0];
