@@ -48,7 +48,8 @@ class AuthIntegrationTest {
     void publicHome_isOk_andShowsLoginLink() throws Exception {
         mvc.perform(get("/"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Google 계정으로 시작하기")));
+                .andExpect(content().string(containsString("Google 계정으로 시작하기")))
+                .andExpect(content().string(containsString("og:image\" content=\"https://whv88.duckdns.org/icons/og.png\"")));
     }
 
     @Test

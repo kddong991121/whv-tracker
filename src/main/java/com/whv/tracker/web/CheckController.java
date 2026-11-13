@@ -50,6 +50,7 @@ public class CheckController {
                 model.addAttribute("error", e.getMessage());
             }
         }
+        model.addAttribute("og", true);
         return "check";
     }
 }

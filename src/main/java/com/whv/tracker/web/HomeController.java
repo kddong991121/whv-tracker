@@ -1,5 +1,6 @@
 package com.whv.tracker.web;
 
+import com.whv.tracker.calc.Forecast;
 import com.whv.tracker.calc.PacePlan;
 import com.whv.tracker.calc.VisaSummary;
 import com.whv.tracker.calc.WorkCalculator;
@@ -53,6 +54,7 @@ public class HomeController {
         AppUser owner = isLoggedIn(authentication) ? users.findByGoogleSubject(authentication.getName()) : null;
         model.addAttribute("loggedIn", isLoggedIn(authentication));
         if (owner == null) {
+            model.addAttribute("og", true);
             return "index";
         }
         LocalDate today = LocalDate.now();
@@ -82,6 +84,11 @@ public class HomeController {
             model.addAttribute("expiry", owner.getVisaExpiry());
         }
 
+        // 예상 완주일: 최근 28일(오늘 포함) 동안 인정된 일수로 속도를 잰다 (PRD 4.10a)
+        VisaSummary recent = ledger.dashboard(owner, null, today.minusDays(Forecast.WINDOW_DAYS - 1), today)
+                .summaries().get(goal == 3 ? 1 : 0);
+        model.addAttribute("forecast", Forecast.of(recent.total(), second.remainingDays(), today, owner.getVisaExpiry()));
+
         YearMonth month = YearMonth.from(today);
         model.addAttribute("month", month);
         model.addAttribute("cells", calendarCells(month, today, ledger.calendar(owner, month, goal)));
@@ -98,6 +105,7 @@ public class HomeController {
     @GetMapping("/login")
     public String login(@RequestParam(required = false) String error, Model model) {
         model.addAttribute("error", error);
+        model.addAttribute("og", true);
         return "login";
     }
 

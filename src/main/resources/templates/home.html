@@ -176,6 +176,19 @@
         </section>
     </div>
 
+    <!-- 예상 완주일 (PRD 4.10a): 최근 4주 속도 기준. 최근 기록이 없거나 다 채웠으면 숨긴다 -->
+    <section class="card" th:if="${forecast != null}">
+        <span class="label">지금 속도면</span>
+        <div style="font-size:24px; font-weight:800; margin-top:4px" th:style="${forecast.afterExpiry()} ? 'font-size:24px; font-weight:800; margin-top:4px; color:#C2410C' : 'font-size:24px; font-weight:800; margin-top:4px'"
+             th:text="${#temporals.format(forecast.finishDate(), 'yyyy년 M월 d일')} + ' 완주 예상'"></div>
+        <p class="muted" style="margin:6px 0 0" th:if="${!forecast.afterExpiry()}"
+           th:text="'최근 4주 동안 일주일에 ' + ${forecast.weeklyDays()} + '일씩 인정됐어요. 이대로면 돼요.'"></p>
+        <p class="muted" style="margin:6px 0 0; color:#C2410C" th:if="${forecast.afterExpiry()}"
+           th:text="'최근 4주 동안 일주일에 ' + ${forecast.weeklyDays()} + '일씩 인정됐어요. 이 속도면 만료일을 넘겨요.'"></p>
+    </section>
+
+    <section th:replace="~{fragments/ui :: install}"></section>
+
     <section class="card">
         <h2 th:text="${month.year} + '년 ' + ${month.monthValue} + '월'"></h2>
         <div class="legend" style="flex-wrap:wrap; margin-top:0">
@@ -194,6 +207,8 @@
             <span style="font-weight:700" th:text="${p.value()}"></span>
         </div>
     </section>
+
+    <section th:replace="~{fragments/ui :: share}"></section>
 
     <p class="muted" style="margin:16px 4px" th:text="${disclaimer}"></p>
     <p class="muted" style="margin:0 4px"><a href="/privacy">개인정보처리방침</a><th:block th:if="${!#strings.isEmpty(feedbackUrl)}"> · <a th:href="${feedbackUrl}" target="_blank" rel="noopener">의견 보내기</a></th:block></p>

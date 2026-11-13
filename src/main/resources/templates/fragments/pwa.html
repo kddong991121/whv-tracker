@@ -3,7 +3,8 @@
 <!-- PWA (홈 화면에 추가) 공통 태그. 모든 화면의 head 안에 넣는다. -->
 <th:block th:fragment="tags">
     <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#2F6FEB">
+    <meta name="theme-color" content="#2F6FEB" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#111315" media="(prefers-color-scheme: dark)">
     <link rel="icon" href="/icons/icon-192.png">
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">

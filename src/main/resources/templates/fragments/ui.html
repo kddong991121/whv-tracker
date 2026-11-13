@@ -6,6 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${title}">워홀 88</title>
     <th:block th:replace="~{fragments/pwa :: tags}"></th:block>
+    <meta name="color-scheme" content="light dark">
+    <!-- 카톡·SNS 공유 미리보기 (PRD 4.10c). 첫 화면, /check, 로그인에만 넣는다 (컨트롤러가 og=true) -->
+    <th:block th:if="${og == true}">
+        <meta property="og:type" content="website">
+        <meta property="og:site_name" content="워홀 88">
+        <meta property="og:title" content="워홀 88 · 세컨 비자 88일, 헷갈리지 않게">
+        <meta property="og:description" content="호주 워홀 인정 근무를 기록하면 남은 일수와 페이스를 알려줘요. 한국어, 무료.">
+        <meta property="og:image" th:content="${siteUrl} + '/icons/og.png'">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+        <meta property="og:url" th:content="${siteUrl} + '/'">
+        <meta name="twitter:card" content="summary_large_image">
+    </th:block>
     <!-- 방문 통계 (GoatCounter): 쿠키 없음, 개인 식별 정보 없음. 서버 설정이 있을 때만 넣는다 -->
     <script th:if="${!#strings.isEmpty(goatcounterUrl)}" th:attr="data-goatcounter=${goatcounterUrl}"
             async src="https://gc.zgo.at/count.js"></script>
@@ -47,9 +60,100 @@
         nav.tabs a.on svg.i { stroke-width:2.2; }
         /* 떠 있는 "근무 추가" 버튼: 둥근 + 모양으로 작게 (달력 칸을 덜 가린다) */
         .fab { position:fixed; right:max(16px, calc(50% - 224px)); bottom:84px; width:56px; height:56px; border-radius:50%; background:#2F6FEB; color:#fff; font-size:30px; font-weight:400; line-height:1; text-decoration:none; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(47,111,235,.35); z-index:9; }
+        /* 다크 모드 (PRD 4.10d): 휴대폰 설정을 따라간다. 화면별 style의 밝은 색도 여기서 덮는다 */
+        @media (prefers-color-scheme: dark) {
+            body { background:#111315; color:#E8EAED; }
+            a { color:#8AB4FF; }
+            header.top .sub { color:#7CC4A0; }
+            .icon-btn, .card, nav.tabs { background:#1C1F23; }
+            .icon-btn, .label, .muted, label.f, nav.tabs a { color:#A9B1BA; }
+            nav.tabs { border-top-color:#2A2E33; }
+            nav.tabs a.on { color:#7CC4A0; } nav.tabs a.on::before { background:#7CC4A0; }
+            input, select, textarea { background:#24282D; color:#E8EAED; border-color:#3A4047; color-scheme:dark; }
+            .btn.ghost { background:#2A2E33; color:#C9CED4; }
+            .flash.ok { background:#16352A; color:#9BE0BC; } .flash.err { background:#3A1D1D; color:#F5A9A9; }
+            .notice { background:#3A2F12; color:#F6D58A; }
+            .badge.sure { background:#1C2F55; color:#AFC8FF; } .badge.short { background:#3A2F12; color:#F6D58A; } .badge.off { background:#2A2E33; color:#A9B1BA; }
+            body.sunset { background:#111315 linear-gradient(180deg,#2B2118 0,#111315 260px) no-repeat; }
+            /* 화면별 style에 박힌 밝은 색 덮기 */
+            .ledger section, .stat { background:#1C1F23 !important; }
+            .place, .day, .rec, .ob-step, .feat, label.goal { border-color:#2A2E33 !important; }
+            .bar, .preview .bar, .ob-step .num, .x, .icon-btn[style] { background:#2A2E33 !important; color:#C9CED4; }
+            label.goal:has(input:checked), .ob-goal button.on, .copy-week, .chip:active { background:#16352A !important; color:#9BE0BC; }
+            .ob-goal button, .chip { background:#24282D; color:#E8EAED; border-color:#3A4047; }
+            .pick { background:#16352A !important; }
+            .pick b, .copy-week { color:#9BE0BC; }
+            .flash.warn, .warn-list, .disclaimer { background:#3A2F12 !important; color:#F6D58A !important; }
+            .feat .ic, .ghost-link, .quick.done { background:#16352A !important; color:#9BE0BC !important; }
+            .quick.done a { color:#9BE0BC; }
+            .cal .worked { background:#1C2F55; color:#AFC8FF; } .cal .short { background:#5A4710; color:#FDE68A; }
+            .cal .today { box-shadow:inset 0 0 0 2px #E8EAED; }
+            .big .of, .note, .meta, .hint, .sub, .add-pill, .legend { color:#A9B1BA; }
+            .day > details[open] .add-pill { color:#E8EAED; }
+            .days label { background:#24282D; border-color:#3A4047; color:#E8EAED; }
+            .google:hover { background:#F1F3F4; }
+            .ledger form label, .pick small, .hero p.lead, .feat span { color:#A9B1BA; }
+            .status.ok, .ok { color:#7CC4A0 !important; } .status.warn, .warn { color:#F6D58A !important; } .no { color:#F5A9A9 !important; }
+        }
+        .install, .share { display:flex; gap:12px; align-items:center; }
+        .install b, .share b { display:block; font-size:15px; } .install span, .share span { font-size:13px; color:#4E5968; line-height:1.5; }
+        @media (prefers-color-scheme: dark) { .install span, .share span { color:#A9B1BA; } }
     </style>
 </head>
 <body>
+<!-- 홈 화면에 추가 안내 (PRD 4.10b). 앱으로 열었거나 닫기를 눌렀으면 숨긴다. 기억은 이 기기 브라우저에만 -->
+<section th:fragment="install" class="card install" id="install" hidden>
+    <img src="/icons/icon-192.png" width="44" height="44" alt="" style="border-radius:12px">
+    <div style="flex:1; min-width:0"><b>앱처럼 쓰기</b>
+        <span id="installHow">홈 화면에 추가하면 바로 열 수 있어요.</span></div>
+    <button class="btn" type="button" id="installBtn" style="height:40px; padding:0 14px; font-size:14px">추가</button>
+    <button class="btn ghost" type="button" id="installClose" aria-label="닫기" style="height:40px; width:40px; padding:0">✕</button>
+    <script>
+    (function () {
+        var box = document.getElementById('install'), btn = document.getElementById('installBtn');
+        var KEY = 'whv88.installClosed', deferred = null;
+        function closed() { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }
+        var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+        if (standalone || closed()) { return; }
+        var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        if (ios) {
+            document.getElementById('installHow').textContent = '사파리 아래 공유 버튼 → "홈 화면에 추가"를 눌러요.';
+            btn.hidden = true; box.hidden = false;
+        }
+        window.addEventListener('beforeinstallprompt', function (e) {
+            e.preventDefault(); deferred = e; box.hidden = false;
+        });
+        btn.addEventListener('click', function () {
+            if (!deferred) { return; }
+            deferred.prompt();
+            deferred.userChoice.finally(function () { deferred = null; box.hidden = true; });
+        });
+        document.getElementById('installClose').addEventListener('click', function () {
+            try { localStorage.setItem(KEY, '1'); } catch (e) { }
+            box.hidden = true;
+        });
+    })();
+    </script>
+</section>
+
+<!-- 친구에게 알려주기 (PRD 4.10g). 휴대폰 공유 창, 안 되면 링크 복사. 보상·추천인 기록 없음 -->
+<section th:fragment="share" class="card share">
+    <div style="flex:1; min-width:0"><b>같이 일하는 친구에게 알려주기</b>
+        <span>같은 농장 동료도 88일을 같이 세요.</span></div>
+    <button class="btn" type="button" style="height:40px; padding:0 14px; font-size:14px; background:#2E6B52"
+            onclick="whvShare(this)">공유</button>
+    <script>
+    function whvShare(btn) {
+        var url = location.origin + '/?s=share';
+        var data = { title: '워홀 88', text: '세컨 88일 같이 세요. 한국어 무료 계산기예요 👉', url: url };
+        if (navigator.share) { navigator.share(data).catch(function () { }); return; }
+        var done = function () { btn.textContent = '복사됨 ✓'; setTimeout(function () { btn.textContent = '공유'; }, 2000); };
+        if (navigator.clipboard) { navigator.clipboard.writeText(data.text + ' ' + url).then(done, function () { prompt('이 링크를 복사하세요', url); }); }
+        else { prompt('이 링크를 복사하세요', url); }
+    }
+    </script>
+</section>
+
 <nav class="tabs" th:fragment="nav(active)" aria-label="하단 메뉴">
     <!-- 아이콘: 직접 그린 단순 선 아이콘 (24×24, 글자색을 따름) -->
     <a href="/" th:classappend="${active == 'home'} ? 'on'"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/></svg>홈</a>

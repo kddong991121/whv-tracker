@@ -72,6 +72,27 @@ class HomeWorkPagesTest {
     }
 
     @Test
+    void home_showsForecastFromRecentPace_andShareAndInstall() throws Exception {
+        LocalDate today = LocalDate.now();
+        WorkRecord r = ledger.addCasual(owner, "속도 농장", "4670", Industry.REGIONAL_PRIMARY_MINING_CONSTRUCTION, 2,
+                today.minusDays(60), today, 5, null, null, null, new BigDecimal("8"), null, false);
+        // 40일 전 근무만 있으면 최근 4주 속도가 0이라 예상일을 숨긴다
+        ledger.addWorkDay(owner, r.getId(), today.minusDays(40), new BigDecimal("8"));
+        mvc.perform(get("/")).andExpect(content().string(org.hamcrest.Matchers.not(containsString("완주 예상"))))
+                .andExpect(content().string(containsString("같이 일하는 친구에게 알려주기")))
+                .andExpect(content().string(containsString("id=\"install\"")))
+                // 개인 화면에는 공유 미리보기를 넣지 않는다 (PRD 4.10c)
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("og:image"))));
+
+        // 최근 28일 안에 5일 (평소 시간) = 7일 인정 → 주 1.8일
+        for (int i = 1; i <= 5; i++) {
+            ledger.addWorkDay(owner, r.getId(), today.minusDays(i), new BigDecimal("8"));
+        }
+        mvc.perform(get("/")).andExpect(content().string(containsString("완주 예상")))
+                .andExpect(content().string(containsString("일주일에 1.8일씩 인정됐어요")));
+    }
+
+    @Test
     void onboarding_placeThenFirstShift_thenHidden() throws Exception {
         LocalDate today = LocalDate.now();
         // 일터·근무가 없으면 ② 일한 곳 추가 폼
