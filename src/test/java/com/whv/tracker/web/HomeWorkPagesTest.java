@@ -232,4 +232,33 @@ class HomeWorkPagesTest {
                 .andExpect(content().string(containsString("원본 파일은 서버로 보내지 않아요")))
                 .andExpect(content().string(org.hamcrest.Matchers.not(containsString("multipart"))));
     }
+
+    @Test
+    void payslipBatch_savesOneAtATime_andAnswersJson() throws Exception {
+        // 여러 장 이어서 저장 (PRD 4.10f): 화면 이동 없이 JSON으로 답한다. 파일 파라미터는 없다.
+        WorkRecord r = ledger.addCasual(owner, "여러장 농장", "4670", Industry.REGIONAL_PRIMARY_MINING_CONSTRUCTION, 2,
+                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 11, 30), 5, null, null, null, new BigDecimal("8"), null, false);
+        mvc.perform(get("/payslip")).andExpect(content().string(containsString("multiple")))
+                .andExpect(content().string(containsString("최대 30장")));
+
+        mvc.perform(post("/payslip/one").param("recordId", String.valueOf(r.getId())).param("employerName", "여러장 농장")
+                        .param("periodStart", "2026-10-05").param("periodEnd", "2026-10-11").param("totalHours", "16")
+                        .param("dates", "2026-10-05", "2026-10-06").param("consent", "true"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(content().string(containsString("\"ok\":true")))
+                .andExpect(content().string(containsString("근무 2일")));
+
+        // 같은 날짜를 또 넣으면 저장하지 않고 이유를 JSON으로 알려준다 (화면에서 건너뛰기 안내)
+        mvc.perform(post("/payslip/one").param("recordId", String.valueOf(r.getId())).param("employerName", "여러장 농장")
+                        .param("periodStart", "2026-10-05").param("periodEnd", "2026-10-11").param("totalHours", "8")
+                        .param("dates", "2026-10-05").param("consent", "true"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("\"ok\":false")));
+
+        // 빠진 값도 JSON으로 답한다 (페이지로 이동하지 않음)
+        mvc.perform(post("/payslip/one").param("recordId", String.valueOf(r.getId())))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("입력값을 확인해 주세요")));
+    }
 }

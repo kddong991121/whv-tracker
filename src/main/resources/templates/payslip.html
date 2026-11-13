@@ -29,9 +29,9 @@
         <!-- name 속성이 없고 폼 밖에 있어서 파일은 서버로 가지 않는다 -->
         <label class="pick" for="pdf">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 18v-6M9 15l3-3 3 3"/></svg>
-            <span><b>PDF 고르기</b><small id="pdfName">페이슬립 PDF를 골라 주세요</small></span>
+            <span><b>PDF 고르기</b><small id="pdfName">여러 장을 한 번에 골라도 돼요 (최대 30장)</small></span>
         </label>
-        <input type="file" id="pdf" accept="application/pdf" class="sr-only" aria-label="페이슬립 PDF">
+        <input type="file" id="pdf" accept="application/pdf" multiple class="sr-only" aria-label="페이슬립 PDF (여러 장 가능)">
         <style>
             .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
             .pick { display:flex; align-items:center; gap:14px; padding:18px; border:2px dashed #2E6B52; border-radius:16px;
@@ -40,6 +40,25 @@
             .pick b { display:block; font-size:17px; }
             .pick small { display:block; font-size:13px; color:#4E5968; margin-top:2px; word-break:break-all; }
             #pdf:focus-visible + * , .pick:focus-within { outline:2px solid #2E6B52; outline-offset:2px; }
+        </style>
+        <!-- 여러 장 진행 (PRD 4.10f): 한 장씩 확인 → 저장하면 다음 장 -->
+        <div id="queue" hidden style="margin-top:12px">
+            <div class="row"><b id="qProgress" style="font-size:15px"></b>
+                <button type="button" class="btn ghost" id="qSkip" style="height:36px; font-size:13px">이 장 건너뛰기</button></div>
+            <div class="qbar"><span id="qBar"></span></div>
+            <ol id="qList" class="qlist"></ol>
+        </div>
+        <style>
+            #queue [hidden] { display:none; }
+            .qbar { height:6px; background:#E5E8EB; border-radius:3px; overflow:hidden; margin:8px 0; }
+            .qbar span { display:block; height:100%; width:0; background:#2E6B52; transition:width .2s; }
+            .qlist { list-style:none; padding:0; margin:0; max-height:180px; overflow:auto; font-size:13px; }
+            .qlist li { display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px solid #EFEAE0; }
+            .qlist li span:first-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+            .qlist li.cur { font-weight:700; }
+            .qlist .st { flex-shrink:0; color:#4E5968; } .qlist .st.saved { color:#14663C; } .qlist .st.fail { color:#92400E; }
+            @media (prefers-color-scheme: dark) { .qbar { background:#2A2E33; } .qlist li { border-color:#2A2E33; }
+                .qlist .st { color:#A9B1BA; } .qlist .st.saved { color:#7CC4A0; } .qlist .st.fail { color:#F6D58A; } }
         </style>
         <p class="muted" id="readStatus">PDF를 고르면 고용주, 급여 기간, 총 근무 시간을 자동으로 채워요. 사진(JPG·PNG)은 아래에 직접 입력하세요.</p>
     </section>
@@ -235,40 +254,124 @@
         return out;
     }
 
-    // 고른 파일 이름을 버튼 안에 보여준다
-    $('pdf')?.addEventListener('change', e => {
-        const f = e.target.files[0];
-        $('pdfName').textContent = f ? f.name : '페이슬립 PDF를 골라 주세요';
-    });
+    // ---- 여러 장 (PRD 4.10f): 파일은 한 장씩 이 기기에서만 읽고, 확인한 값만 한 장씩 저장한다 ----
+    const MAX = 30;
+    let queue = [];   // {name, v(읽은 값 또는 null), state: wait|saved|skip}
+    let cur = -1;
+
+    async function readText(file) {
+        const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+        let text = '';
+        for (let p = 1; p <= Math.min(doc.numPages, 3); p++) {
+            const content = await (await doc.getPage(p)).getTextContent();
+            for (const item of content.items) text += item.str + (item.hasEOL ? '\n' : ' ');
+            text += '\n';
+        }
+        await doc.destroy();
+        return text;
+    }
+
+    function fill(v) {
+        v = v || {};
+        $('employerName').value = (v.employer || '').slice(0, 100);
+        $('abn').value = v.abn || '';
+        $('periodStart').value = v.start || '';
+        $('periodEnd').value = v.end || '';
+        $('totalHours').value = v.hours || '';
+        $('employmentType').value = v.type || '';
+        const norm = t => (t || '').toLowerCase().replace(/\(.*?\)|pty|ltd|[^a-z0-9가-힣]/g, '');
+        const match = [...$('recordId').options].find(o => v.employer && norm(o.dataset.name)
+            && (norm(v.employer).includes(norm(o.dataset.name)) || norm(o.dataset.name).includes(norm(v.employer))));
+        if (match) $('recordId').value = match.value;
+        renderDays();
+    }
+
+    const STATE = { wait: '대기', saved: '저장됨 ✓', skip: '건너뜀', fail: '직접 입력 필요' };
+    function renderQueue() {
+        $('queue').hidden = queue.length < 2;
+        const done = queue.filter(q => q.state !== 'wait').length;
+        $('qProgress').textContent = cur < queue.length ? `${cur + 1} / ${queue.length}장째` : `${queue.length}장 모두 끝`;
+        $('qBar').style.width = (done / queue.length * 100) + '%';
+        $('qSkip').hidden = cur >= queue.length;
+        $('qList').innerHTML = '';
+        queue.forEach((q, k) => {
+            const li = document.createElement('li');
+            if (k === cur) li.className = 'cur';
+            const st = q.state === 'wait' && !q.v ? 'fail' : q.state;
+            const a = document.createElement('span'); a.textContent = (k + 1) + '. ' + q.name;
+            const b = document.createElement('span'); b.className = 'st ' + st; b.textContent = STATE[st];
+            li.append(a, b); $('qList').appendChild(li);
+        });
+    }
+
+    function show(k) {
+        cur = k;
+        if (cur >= queue.length) {
+            const saved = queue.filter(q => q.state === 'saved').length, skip = queue.filter(q => q.state === 'skip').length;
+            status.innerHTML = '';
+            status.append(`끝났어요 · ${saved}장 저장, ${skip}장 건너뜀. `);
+            const a = document.createElement('a'); a.href = '/payslip'; a.textContent = '저장한 목록 보기';
+            status.appendChild(a);
+            fill(null);
+            renderQueue();
+            return;
+        }
+        fill(queue[cur].v);
+        status.textContent = queue[cur].v
+            ? `${queue[cur].name} · 값이 맞는지 확인하고 일한 날을 골라 저장하세요. 파일은 이 기기에서만 읽었어요.`
+            : `${queue[cur].name} · 글자를 읽지 못했어요 (사진으로 된 PDF일 수 있어요). 직접 입력하거나 건너뛰세요.`;
+        renderQueue();
+        $('form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
     $('pdf')?.addEventListener('change', async e => {
-        const file = e.target.files[0];
-        if (!file) return;
-        status.textContent = '읽는 중…';
-        try {
-            const doc = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
-            let text = '';
-            for (let p = 1; p <= Math.min(doc.numPages, 3); p++) {
-                const content = await (await doc.getPage(p)).getTextContent();
-                for (const item of content.items) text += item.str + (item.hasEOL ? '\n' : ' ');
-                text += '\n';
+        let files = [...e.target.files];
+        if (!files.length) return;
+        const over = files.length > MAX;
+        files = files.slice(0, MAX);
+        $('pdfName').textContent = files.length === 1 ? files[0].name : `${files.length}개 파일`;
+        queue = files.map(f => ({ name: f.name, v: null, state: 'wait' }));
+        for (let k = 0; k < files.length; k++) {
+            status.textContent = `읽는 중… (${k + 1} / ${files.length})`;
+            try {
+                const text = await readText(files[k]);
+                queue[k].v = text.trim() ? parse(text) : null;
+            } catch (err) {
+                queue[k].v = null;
             }
-            if (!text.trim()) { status.textContent = '글자를 읽지 못했어요 (사진으로 된 PDF일 수 있어요). 아래에 직접 입력해 주세요.'; return; }
-            const v = parse(text);
-            if (v.employer) $('employerName').value = v.employer.slice(0, 100);
-            if (v.abn) $('abn').value = v.abn;
-            if (v.start) $('periodStart').value = v.start;
-            if (v.end) $('periodEnd').value = v.end;
-            if (v.hours) $('totalHours').value = v.hours;
-            if (v.type) $('employmentType').value = v.type;
-            const norm = t => (t || '').toLowerCase().replace(/\(.*?\)|pty|ltd|[^a-z0-9가-힣]/g, '');
-            const match = [...$('recordId').options].find(o => v.employer && norm(o.dataset.name)
-                && (norm(v.employer).includes(norm(o.dataset.name)) || norm(o.dataset.name).includes(norm(v.employer))));
-            if (match) $('recordId').value = match.value;
-            renderDays();
-            status.textContent = '읽기 완료 · 파일은 이 기기에서만 읽었어요. 값이 맞는지 확인해 주세요.';
+        }
+        e.target.value = '';   // 같은 파일을 다시 골라도 change가 오게
+        show(0);
+        if (over) status.textContent = `한 번에 ${MAX}장까지만 읽어요. 앞의 ${MAX}장을 가져왔어요. ` + status.textContent;
+    });
+
+    $('qSkip')?.addEventListener('click', () => {
+        if (cur < 0 || cur >= queue.length) return;
+        queue[cur].state = 'skip';
+        show(cur + 1);
+    });
+
+    // 여러 장을 고른 동안에는 화면을 새로 고치지 않고 한 장씩 저장한다 (확인한 값만, 파일 없음)
+    $('form')?.addEventListener('submit', async e => {
+        if (queue.length < 2 || cur < 0 || cur >= queue.length) return;   // 한 장·직접 입력은 원래대로
+        e.preventDefault();
+        const btn = e.target.querySelector('button[type=submit]');
+        btn.disabled = true;
+        try {
+            const res = await fetch('/payslip/one', { method: 'POST', body: new FormData(e.target),
+                headers: { 'Accept': 'application/json' } });
+            const isJson = (res.headers.get('content-type') || '').includes('json');
+            const body = isJson ? await res.json() : { ok: false, error: '저장하지 못했어요. 다시 로그인해 주세요.' };
+            if (body.ok) {
+                queue[cur].state = 'saved';
+                show(cur + 1);
+            } else {
+                status.textContent = body.error;
+            }
         } catch (err) {
-            status.textContent = 'PDF를 읽지 못했어요. 아래에 직접 입력해 주세요.';
+            status.textContent = '저장하지 못했어요. 인터넷 연결을 확인해 주세요.';
+        } finally {
+            btn.disabled = false;
         }
     });
 
@@ -277,7 +380,7 @@
         const box = $('days');
         box.innerHTML = '';
         const s = $('periodStart').value, e = $('periodEnd').value;
-        if (!s || !e) return;
+        if (!s || !e) { $('perDay').textContent = ''; return; }
         const start = new Date(s + 'T00:00:00'), end = new Date(e + 'T00:00:00');
         if (end < start || (end - start) / 86400000 > 31) { box.textContent = '급여 기간을 확인해 주세요 (최대 31일).'; return; }
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
