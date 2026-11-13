@@ -188,6 +188,7 @@
     </section>
 
     <section th:replace="~{fragments/ui :: install}"></section>
+    <th:block th:if="${onboarding.step() == 0}"><section th:replace="~{fragments/ui :: push('home')}"></section></th:block>
 
     <section class="card">
         <h2 th:text="${month.year} + '년 ' + ${month.monthValue} + '월'"></h2>

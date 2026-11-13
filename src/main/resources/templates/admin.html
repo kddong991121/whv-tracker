@@ -37,6 +37,9 @@
             <div class="stat"><div class="k">최근 7일 기록한 사람</div><div class="v" th:text="${stats.recordedLast7Days()} + '명'"></div>
                 <div class="s" th:text="'근무를 넣은 사람의 ' + ${stats.recordedLast7Percent()} + '%'"></div></div>
         </div>
+        <div class="stat-grid" style="margin-top:12px">
+            <div class="stat"><div class="k">주 1회 알림 켠 사람</div><div class="v" th:text="${stats.pushUsers()} + '명'"></div></div>
+        </div>
         <p class="muted" style="margin:8px 0 0">근무를 적은 시각은 11월 12일 배포 뒤부터 쌓여요.</p>
     </section>
 

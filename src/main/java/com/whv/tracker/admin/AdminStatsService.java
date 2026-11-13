@@ -26,7 +26,7 @@ public class AdminStatsService {
     /** @param signupsByDay 최근 14일 날짜별 가입 수 (오래된 날 먼저) */
     public record Stats(long totalUsers, long todaySignups, long activeLast7Days, long secondGoal, long thirdGoal,
                         long usersWithRecords, long deletedLast30Days, List<DayCount> signupsByDay,
-                        long returnedUsers, long recordedLast7Days) {
+                        long returnedUsers, long recordedLast7Days, long pushUsers) {
 
         /** 가입한 날보다 뒤에 또 온 사람 비율(%). 가입자가 없으면 0. */
         public long returnedPercent() {
@@ -64,6 +64,7 @@ public class AdminStatsService {
                 + " and cast(u.lastSeenAt as LocalDate) > cast(u.createdAt as LocalDate)");
         long recorded7 = count("select count(distinct d.record.owner.id) from WorkDay d where d.createdAt >= ?1",
                 now.minusDays(7));
+        long pushUsers = count("select count(distinct s.owner.id) from PushSubscription s");
         long deleted = count("select count(d) from DeletedAccountLog d where d.deletedAt >= ?1", now.minusDays(30));
 
         LocalDate from = now.toLocalDate().minusDays(13);
@@ -79,7 +80,7 @@ public class AdminStatsService {
         }
         List<DayCount> days = new ArrayList<>();
         byDay.forEach((d, c) -> days.add(new DayCount(d, c)));
-        return new Stats(total, today, active, second, third, withRecords, deleted, days, returned, recorded7);
+        return new Stats(total, today, active, second, third, withRecords, deleted, days, returned, recorded7, pushUsers);
     }
 
     private long count(String jpql, Object... params) {

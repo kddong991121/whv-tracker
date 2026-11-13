@@ -34,6 +34,7 @@ public class AccountDeletionService {
         if (locked == null) {
             return false; // 다른 요청이 먼저 지웠다
         }
+        em.createQuery("delete from PushSubscription s where s.owner.id = :u").setParameter("u", userId).executeUpdate();
         em.createQuery("delete from Payslip p where p.owner.id = :u").setParameter("u", userId).executeUpdate();
         em.createQuery("delete from WorkDay d where d.record.id in "
                 + "(select r.id from WorkRecord r where r.owner.id = :u)").setParameter("u", userId).executeUpdate();

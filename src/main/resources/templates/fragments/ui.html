@@ -26,6 +26,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing:border-box; }
+        [hidden] { display:none !important; } /* .btn 같은 display 규칙이 hidden 속성을 이기지 않게 */
         body { margin:0; background:#F6F2EA; color:#191F28; font-family:'Noto Sans KR','Malgun Gothic',sans-serif; }
         .app { max-width:480px; margin:0 auto; padding:0 16px 120px; }
         a { color:#2F6FEB; }
@@ -151,6 +152,97 @@
         if (navigator.clipboard) { navigator.clipboard.writeText(data.text + ' ' + url).then(done, function () { prompt('이 링크를 복사하세요', url); }); }
         else { prompt('이 링크를 복사하세요', url); }
     }
+    </script>
+</section>
+
+<!-- 주 1회 알림 (PRD 4.10e). mode=account: 켜기·끄기 카드, mode=home: 첫 근무 뒤 한 번 권하는 카드.
+     서버에 키가 없으면(vapidPublic 빈 값) 아무것도 안 보인다. 허용 창은 버튼을 눌렀을 때만 뜬다 -->
+<section th:fragment="push(mode)" th:if="${!#strings.isEmpty(vapidPublic)}" class="card share" id="push" hidden
+         th:attr="data-key=${vapidPublic},data-mode=${mode}">
+    <input type="hidden" id="pushCsrf" th:value="${_csrf != null} ? ${_csrf.token} : ''">
+    <div style="flex:1; min-width:0"><b>주 1회 근무 알림</b>
+        <span id="pushMsg">매주 일요일 저녁 7시(시드니 시간)에 이번 주 기록을 알려 드려요.</span></div>
+    <button class="btn" type="button" id="pushBtn" style="height:40px; padding:0 14px; font-size:14px; white-space:nowrap">알림 받기</button>
+    <button class="btn ghost" type="button" id="pushClose" aria-label="닫기" style="height:40px; width:40px; padding:0" hidden>✕</button>
+    <script>
+    (function () {
+        var box = document.getElementById('push'), btn = document.getElementById('pushBtn'), msg = document.getElementById('pushMsg');
+        var mode = box.dataset.mode, key = box.dataset.key, KEY = 'whv88.pushClosed';
+        var supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+        var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+        function closed() { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }
+        function say(t) { msg.textContent = t; }
+        if (mode === 'home') {
+            if (closed()) { return; }
+            document.getElementById('pushClose').hidden = false;
+            document.getElementById('pushClose').onclick = function () {
+                try { localStorage.setItem(KEY, '1'); } catch (e) { }
+                box.hidden = true;
+            };
+        }
+        if (!supported) {
+            if (mode === 'account') {
+                say(ios && !standalone ? '아이폰은 사파리에서 "홈 화면에 추가"한 뒤, 그 앱에서 알림을 켤 수 있어요.'
+                                       : '이 브라우저는 알림을 지원하지 않아요.');
+                btn.hidden = true; box.hidden = false;
+            }
+            return;
+        }
+        if (Notification.permission === 'denied') {
+            if (mode === 'account') { say('브라우저 설정에서 이 사이트 알림이 막혀 있어요. 설정에서 허용으로 바꿔 주세요.'); btn.hidden = true; box.hidden = false; }
+            return;
+        }
+        function b64ToBytes(s) {
+            s = s.replace(/-/g, '+').replace(/_/g, '/'); s += '='.repeat((4 - s.length % 4) % 4);
+            var raw = atob(s), out = new Uint8Array(raw.length);
+            for (var i = 0; i < raw.length; i++) { out[i] = raw.charCodeAt(i); }
+            return out;
+        }
+        function post(url, data) {
+            data._csrf = document.getElementById('pushCsrf').value;
+            return fetch(url, { method: 'POST', body: new URLSearchParams(data), headers: { 'Accept': 'application/json' } })
+                .then(function (r) { return (r.headers.get('content-type') || '').indexOf('json') >= 0 ? r.json() : { ok: false, error: '다시 로그인해 주세요.' }; });
+        }
+        var current = null;
+        function show(sub) {
+            current = sub;
+            if (mode === 'home') { box.hidden = !!sub; if (sub) { return; } }
+            box.hidden = false;
+            btn.textContent = sub ? '알림 끄기' : '알림 받기';
+            btn.className = sub ? 'btn ghost' : 'btn';
+            if (mode === 'account') { say(sub ? '이 기기에서 알림을 받고 있어요 · 매주 일요일 저녁 7시(시드니 시간).' : '매주 일요일 저녁 7시(시드니 시간)에 이번 주 기록을 알려 드려요.'); }
+        }
+        navigator.serviceWorker.ready.then(function (reg) {
+            return reg.pushManager.getSubscription().then(function (sub) {
+                show(sub);
+                btn.onclick = function () {
+                    btn.disabled = true;
+                    if (current) {
+                        var ep = current.endpoint;
+                        current.unsubscribe().then(function () { return post('/push/unsubscribe', { endpoint: ep }); })
+                            .then(function () { show(null); say('알림을 껐어요.'); }).finally(function () { btn.disabled = false; });
+                        return;
+                    }
+                    Notification.requestPermission().then(function (p) {
+                        if (p !== 'granted') { say('알림을 허용해야 받을 수 있어요.'); return null; }
+                        // 알림 서버 연결이 막히면 끝없이 기다릴 수 있어 20초에서 끊는다
+                        return Promise.race([reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(key) }),
+                                new Promise(function (_, no) { setTimeout(function () { no(new Error('timeout')); }, 20000); })])
+                            .then(function (s) {
+                                var j = s.toJSON();
+                                return post('/push/subscribe', { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth })
+                                    .then(function (r) {
+                                        if (r.ok) { show(s); if (mode === 'home') { box.hidden = false; btn.hidden = true; say('알림을 켰어요. 확인 알림을 보냈어요.'); } }
+                                        else { s.unsubscribe(); say(r.error || '알림을 켜지 못했어요.'); }
+                                    });
+                            });
+                    }).catch(function () { say('알림을 켜지 못했어요. 잠시 뒤 다시 해 주세요.'); })
+                      .finally(function () { btn.disabled = false; });
+                };
+            });
+        });
+    })();
     </script>
 </section>
 
