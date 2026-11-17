@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/ui :: head('워홀 88 - 의견 보내기')}"></head>
+<body>
+<div class="app">
+    <header class="top"><div><div class="sub">불편한 점, 있으면 좋겠는 기능</div><h1>의견 보내기</h1></div></header>
+    <div class="flash ok" th:if="${message}" th:text="${message}"></div>
+    <div class="flash err" th:if="${error}" th:text="${error}"></div>
+
+    <section class="card">
+        <form method="post" th:action="@{/feedback}" onsubmit="this.querySelector('button').disabled=true;">
+            <label class="f" for="message">무엇이든 편하게 적어 주세요</label>
+            <textarea id="message" name="message" rows="5" required th:maxlength="${maxLength}"
+                      style="width:100%; border:1px solid #D1D6DB; border-radius:10px; padding:10px; font-size:15px; font-family:inherit; resize:vertical"></textarea>
+            <p class="muted" style="margin:8px 0 0">주민번호·계좌번호 같은 민감한 정보는 적지 마세요. 운영자만 읽고, 탈퇴하면 함께 지워져요.</p>
+            <button class="btn" type="submit" style="width:100%; margin-top:12px">보내기</button>
+        </form>
+    </section>
+</div>
+<nav th:replace="~{fragments/ui :: nav('')}"></nav>
+</body>
+</html>

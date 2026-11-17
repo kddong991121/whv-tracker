@@ -39,12 +39,16 @@ public class HomeController {
     private final com.whv.tracker.user.AccountDeletionService deletion;
     private final String contactEmail;
 
+    private final com.whv.tracker.feedback.FeedbackService feedback;
+
     public HomeController(AppUserService users, LedgerService ledger,
                           com.whv.tracker.user.AccountDeletionService deletion,
+                          com.whv.tracker.feedback.FeedbackService feedback,
                           @org.springframework.beans.factory.annotation.Value("${whv.contact-email:}") String contactEmail) {
         this.users = users;
         this.ledger = ledger;
         this.deletion = deletion;
+        this.feedback = feedback;
         this.contactEmail = contactEmail;
     }
 
@@ -99,6 +103,8 @@ public class HomeController {
         LedgerService.Onboarding onboarding = ledger.onboarding(owner, goal);
         model.addAttribute("onboarding", onboarding);
         model.addAttribute("yesterday", today.minusDays(1));
+        // 근무를 5일 이상 넣은 사람에게 👍/👎를 한 번 묻는다 (PRD 4.12b)
+        model.addAttribute("askRating", feedback.shouldAskRating(owner));
         return "home";
     }
 

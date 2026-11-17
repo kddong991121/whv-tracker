@@ -58,11 +58,16 @@ public class AdminStatsService {
     public record NameCount(String name, long count) {
     }
 
+    /** 앱 안에서 받은 의견 한 줄 (PRD 4.12c). rating: 1 = 👍, -1 = 👎, null = 글만. */
+    public record FeedbackRow(LocalDateTime at, Integer rating, String message, String email) {
+    }
+
     /**
      * @param recordsByDay 최근 7일 날짜별 새로 적은 근무 수 (오래된 날 먼저)
      */
     public record Details(List<Member> members, List<NameCount> topPostcodes, List<NameCount> industries,
-                          List<DayCount> recordsByDay, long payslipUsers, long payslips, long pushUsers) {
+                          List<DayCount> recordsByDay, long payslipUsers, long payslips, long pushUsers,
+                          long feedbackUp, long feedbackDown, List<FeedbackRow> feedbacks) {
 
         public long maxRecords() {
             return Math.max(1, recordsByDay.stream().mapToLong(DayCount::count).max().orElse(0));
@@ -104,7 +109,13 @@ public class AdminStatsService {
         return new Details(members, postcodes, industries, records,
                 count("select count(distinct p.owner.id) from Payslip p"),
                 count("select count(p) from Payslip p"),
-                count("select count(distinct s.owner.id) from PushSubscription s"));
+                count("select count(distinct s.owner.id) from PushSubscription s"),
+                count("select count(f) from Feedback f where f.rating = 1"),
+                count("select count(f) from Feedback f where f.rating = -1"),
+                em.createQuery("select new com.whv.tracker.admin.AdminStatsService$FeedbackRow("
+                                + "f.createdAt, f.rating, f.message, f.owner.email) from Feedback f"
+                                + " order by f.createdAt desc, f.id desc", FeedbackRow.class)
+                        .setMaxResults(20).getResultList());
     }
 
     @Transactional(readOnly = true)

@@ -153,6 +153,38 @@
     <!-- 알림 권유: 오늘 기록 바로 아래. 첫 근무를 넣은 사람에게만 보인다 (PRD 4.11a) -->
     <th:block th:if="${onboarding.step() == 0}"><section th:replace="~{fragments/ui :: push('home')}"></section></th:block>
 
+    <!-- 쓸 만한가요? 한 번 묻기 (PRD 4.12b). 답하면 다시 안 묻고, [나중에]는 7일 숨긴다 -->
+    <section class="card" id="rate" th:if="${askRating}">
+        <b>워홀 88, 쓸 만한가요?</b>
+        <div style="display:flex; gap:8px; margin-top:10px">
+            <form method="post" th:action="@{/feedback/rate}" style="flex:1" onsubmit="this.querySelector('button').disabled=true;">
+                <input type="hidden" name="rating" value="1">
+                <button class="btn" type="submit" style="width:100%" aria-label="쓸 만해요">👍 좋아요</button>
+            </form>
+            <button class="btn ghost" type="button" id="rateDown" style="flex:1" aria-label="불편해요">👎 아쉬워요</button>
+            <button class="btn ghost" type="button" id="rateLater" style="white-space:nowrap">나중에</button>
+        </div>
+        <form method="post" th:action="@{/feedback/rate}" id="rateWhy" hidden style="margin-top:10px"
+              onsubmit="this.querySelector('button').disabled=true;">
+            <input type="hidden" name="rating" value="-1">
+            <label class="f" for="rateMsg">무엇이 불편했나요? (비워 두고 보내도 돼요)</label>
+            <textarea id="rateMsg" name="message" rows="3" maxlength="500"
+                      style="width:100%; border:1px solid #D1D6DB; border-radius:10px; padding:10px; font-size:15px; font-family:inherit"></textarea>
+            <button class="btn" type="submit" style="width:100%; margin-top:8px">보내기</button>
+        </form>
+        <script>
+        (function () {
+            var box = document.getElementById('rate'), KEY = 'whv88.rateLater', DAY7 = 7 * 24 * 3600 * 1000;
+            try { var t = Number(localStorage.getItem(KEY)); if (t > 1e12 && Date.now() - t < DAY7) { box.hidden = true; } } catch (e) { }
+            document.getElementById('rateDown').onclick = function () { document.getElementById('rateWhy').hidden = false; this.hidden = true; };
+            document.getElementById('rateLater').onclick = function () {
+                try { localStorage.setItem(KEY, String(Date.now())); } catch (e) { }
+                box.hidden = true;
+            };
+        })();
+        </script>
+    </section>
+
     <div class="grid2" style="margin-top:12px">
         <section class="card" style="margin:0">
             <span class="label">비자 만료까지</span>
@@ -220,7 +252,7 @@
     <section th:replace="~{fragments/ui :: share}"></section>
 
     <p class="muted" style="margin:16px 4px" th:text="${disclaimer}"></p>
-    <p class="muted" style="margin:0 4px"><a href="/privacy">개인정보처리방침</a><th:block th:if="${!#strings.isEmpty(feedbackUrl)}"> · <a th:href="${feedbackUrl}" target="_blank" rel="noopener">의견 보내기</a></th:block></p>
+    <p class="muted" style="margin:0 4px"><a href="/privacy">개인정보처리방침</a> · <a href="/feedback">의견 보내기</a></p>
 </div>
 <a th:if="${onboarding.step() == 0}" class="fab" href="/work" aria-label="근무 추가" title="근무 추가">+</a>
 <nav th:replace="~{fragments/ui :: nav('home')}"></nav>
