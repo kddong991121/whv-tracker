@@ -11,8 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * /admin 운영 통계. 개인정보(이메일·이름·근무 내용)는 꺼내지 않고 숫자만 센다.
- * 날짜 기준은 서버 시간대(Australia/Sydney)다.
+ * /admin 운영 통계. 날짜 기준은 서버 시간대(Australia/Sydney)다.
+ * 개인정보는 가입자 목록의 이메일·이름·가입일만 꺼낸다 (PRD 4.9c). 근무 내용·일터·비자 정보는 사람별로 꺼내지 않는다.
  */
 @Service
 public class AdminStatsService {
@@ -49,6 +49,62 @@ public class AdminStatsService {
     }
 
     public record DayCount(LocalDate day, long count) {
+    }
+
+    /** 가입자 목록 한 줄 (PRD 4.9c: 이메일·이름·가입일만). */
+    public record Member(long id, String email, String name, LocalDateTime joined) {
+    }
+
+    public record NameCount(String name, long count) {
+    }
+
+    /**
+     * @param recordsByDay 최근 7일 날짜별 새로 적은 근무 수 (오래된 날 먼저)
+     */
+    public record Details(List<Member> members, List<NameCount> topPostcodes, List<NameCount> industries,
+                          List<DayCount> recordsByDay, long payslipUsers, long payslips, long pushUsers) {
+
+        public long maxRecords() {
+            return Math.max(1, recordsByDay.stream().mapToLong(DayCount::count).max().orElse(0));
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Details details(LocalDateTime now) {
+        List<Member> members = em.createQuery(
+                        "select new com.whv.tracker.admin.AdminStatsService$Member(u.id, u.email, u.displayName, u.createdAt)"
+                                + " from AppUser u order by u.createdAt desc, u.id desc", Member.class)
+                .getResultList();
+
+        List<NameCount> postcodes = new ArrayList<>();
+        for (Object[] row : em.createQuery("select r.postcode, count(distinct r.owner.id) from WorkRecord r"
+                        + " group by r.postcode order by count(distinct r.owner.id) desc, r.postcode", Object[].class)
+                .setMaxResults(10).getResultList()) {
+            postcodes.add(new NameCount((String) row[0], (Long) row[1]));
+        }
+
+        List<NameCount> industries = new ArrayList<>();
+        for (Object[] row : em.createQuery("select r.industry, count(distinct r.owner.id) from WorkRecord r"
+                + " group by r.industry order by count(distinct r.owner.id) desc", Object[].class).getResultList()) {
+            industries.add(new NameCount(((com.whv.tracker.ledger.Industry) row[0]).label(), (Long) row[1]));
+        }
+
+        LocalDate from = now.toLocalDate().minusDays(6);
+        Map<LocalDate, Long> byDay = new TreeMap<>();
+        for (int i = 0; i < 7; i++) {
+            byDay.put(from.plusDays(i), 0L);
+        }
+        for (LocalDateTime c : em.createQuery("select d.createdAt from WorkDay d where d.createdAt >= ?1",
+                LocalDateTime.class).setParameter(1, from.atStartOfDay()).getResultList()) {
+            byDay.merge(c.toLocalDate(), 1L, Long::sum);
+        }
+        List<DayCount> records = new ArrayList<>();
+        byDay.forEach((d, c) -> records.add(new DayCount(d, c)));
+
+        return new Details(members, postcodes, industries, records,
+                count("select count(distinct p.owner.id) from Payslip p"),
+                count("select count(p) from Payslip p"),
+                count("select count(distinct s.owner.id) from PushSubscription s"));
     }
 
     @Transactional(readOnly = true)

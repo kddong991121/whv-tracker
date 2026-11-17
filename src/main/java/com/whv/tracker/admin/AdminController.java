@@ -1,5 +1,6 @@
 package com.whv.tracker.admin;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -26,11 +27,16 @@ public class AdminController {
     }
 
     @GetMapping("/admin")
-    public String admin(Authentication authentication, Model model) {
+    public String admin(Authentication authentication, Model model, HttpServletResponse response) {
         if (!isAdmin(authentication)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        model.addAttribute("stats", stats.stats(LocalDateTime.now()));
+        // 가입자 이메일이 들어 있으니 브라우저·중간 서버에 저장하지 않고, 검색에도 안 나오게 한다 (PRD 4.9c)
+        response.setHeader("Cache-Control", "no-store");
+        response.setHeader("X-Robots-Tag", "noindex, nofollow");
+        LocalDateTime now = LocalDateTime.now();
+        model.addAttribute("stats", stats.stats(now));
+        model.addAttribute("details", stats.details(now));
         return "admin";
     }
 

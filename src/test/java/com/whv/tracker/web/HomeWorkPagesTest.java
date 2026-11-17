@@ -106,6 +106,8 @@ class HomeWorkPagesTest {
         // ③ 첫 근무: 어제·오늘 버튼
         mvc.perform(get("/")).andExpect(content().string(containsString("첫 농장에서 언제 일했나요?")))
                 .andExpect(content().string(containsString("어제 7.6시간")));
+        // 4.11b: 첫 근무 전에도 페이슬립 입구가 보인다
+        mvc.perform(get("/")).andExpect(content().string(containsString("페이슬립이 있나요?")));
 
         long placeId = ledger.dashboard(owner).records().stream()
                 .filter(r -> r.getEmployerName().equals("첫 농장")).findFirst().orElseThrow().getId();
@@ -113,7 +115,9 @@ class HomeWorkPagesTest {
                         .param("workDate", today.minusDays(1).toString()).param("workHours", "7.6"))
                 .andExpect(redirectedUrl("/"));
         // 첫 근무를 넣으면 안내가 사라진다
-        mvc.perform(get("/")).andExpect(content().string(org.hamcrest.Matchers.not(containsString("처음이세요?"))));
+        mvc.perform(get("/")).andExpect(content().string(org.hamcrest.Matchers.not(containsString("처음이세요?"))))
+                .andExpect(content().string(containsString("페이슬립으로 한 번에 넣기")));
+        mvc.perform(get("/work")).andExpect(content().string(containsString("페이슬립이 있으면 한 번에 넣을 수 있어요")));
         // next는 정해진 값만: 다른 값이면 원래 화면으로
         mvc.perform(post("/work/shift").param("next", "https://evil.example").param("recordId", String.valueOf(placeId))
                         .param("workDate", today.minusDays(2).toString()).param("workHours", "7.6"))

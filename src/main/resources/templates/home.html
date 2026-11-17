@@ -83,12 +83,16 @@
                         </form>
                     </div>
                     <a href="/work" style="display:inline-block; margin-top:8px; font-size:14px">다른 날짜·여러 날은 근무 기록에서 →</a>
+                    <a class="ob-payslip" href="/payslip"><b>페이슬립이 있나요?</b> 사진·PDF로 여러 날을 한 번에 넣어요 →<br>
+                        <span class="muted">원본은 내 폰에서만 읽고 서버로 보내지 않아요.</span></a>
                 </th:block>
             </div>
         </div>
     </section>
     <style>
         .onboard { border:2px solid #2E6B52; }
+        .ob-payslip { display:block; margin-top:10px; padding:12px 14px; border-radius:12px; background:#F1F7F3; color:#2E6B52; font-size:14px; line-height:1.5; }
+        .ob-payslip .muted { color:#4E5968; font-size:13px; }
         .ob-step { display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-top:1px solid #EFEAE0; color:#8B95A1; }
         .ob-step.now, .ob-step.done { color:#191F28; }
         .ob-step .num { width:26px; height:26px; flex-shrink:0; border-radius:50%; background:#E5E8EB; color:#4E5968;
@@ -135,6 +139,8 @@
     <div th:if="${quick != null and quick.doneToday()}" class="quick done">
         <span>오늘 <b th:text="${quick.employer()}"></b> 기록 완료 ✓</span><a href="/work">고치기</a>
     </div>
+    <a class="ob-payslip" th:if="${onboarding.step() == 0}" href="/payslip"><b>페이슬립으로 한 번에 넣기</b> →<br>
+        <span class="muted">원본은 내 폰에서만 읽고 서버로 보내지 않아요.</span></a>
     <style>
         .btn.quick { width:100%; height:auto; min-height:56px; display:flex; justify-content:space-between; align-items:center;
             gap:8px; padding:12px 18px; font-size:16px; font-weight:500; text-align:left; background:#2E6B52; }
@@ -143,6 +149,9 @@
             border-radius:14px; background:#E6F0EA; color:#2E6B52; font-size:15px; }
         .quick.done a { color:#2E6B52; font-size:14px; }
     </style>
+
+    <!-- 알림 권유: 오늘 기록 바로 아래. 첫 근무를 넣은 사람에게만 보인다 (PRD 4.11a) -->
+    <th:block th:if="${onboarding.step() == 0}"><section th:replace="~{fragments/ui :: push('home')}"></section></th:block>
 
     <div class="grid2" style="margin-top:12px">
         <section class="card" style="margin:0">
@@ -188,7 +197,6 @@
     </section>
 
     <section th:replace="~{fragments/ui :: install}"></section>
-    <th:block th:if="${onboarding.step() == 0}"><section th:replace="~{fragments/ui :: push('home')}"></section></th:block>
 
     <section class="card">
         <h2 th:text="${month.year} + '년 ' + ${month.monthValue} + '월'"></h2>

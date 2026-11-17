@@ -44,6 +44,7 @@
             </span>
         </div>
         <a class="notice" style="margin-top:12px" href="#places" th:if="${places.isEmpty()}">먼저 아래 '내 일터'에서 일한 곳을 추가하세요.</a>
+        <a href="/payslip" th:if="${!places.isEmpty()}" style="display:block; margin-top:12px; font-size:14px">페이슬립이 있으면 한 번에 넣을 수 있어요 →</a>
         <!-- 지난주 근무를 요일·시간 그대로 이번 주에 넣는다 -->
         <form th:if="${!places.isEmpty()}" method="post" th:action="@{/work/copy-week}" style="margin-top:12px"
               onsubmit="this.querySelector('button').disabled=true;">

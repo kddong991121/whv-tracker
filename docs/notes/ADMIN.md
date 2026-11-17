@@ -54,3 +54,34 @@ AdminStatsService.stats(now)
 - 버그: 분모 0 나누기 → `percent()`에서 0 처리.
 - 보안: /admin 접근 규칙은 그대로(관리자 이메일 아니면 404).
 - 누락: 화면 스크린샷은 관리자 로그인이 필요해 MockMvc 렌더링 확인으로 대신함.
+
+## 관리자 화면 확장 (2026-11-13, PRD 4.9c)
+
+### 무엇을 더했나
+- SSH에서 SQL로 보던 것을 /admin에서 바로 본다: 기록 활동(최근 7일 날짜별 막대), 기능 사용(페이슬립 쓴 사람·장수, 알림 켠 사람), 지역 Top 10(포스트코드별 사람 수), 업종별 사람 수, 가입자 목록.
+- 가입자 목록은 사용자 결정에 따라 **이메일·이름·가입일만** 보여준다. 근무 기록·일터·비자 정보는 사람별로 꺼내지 않는다.
+- 1분마다 자동 새로 고침(JS `setTimeout` → `location.reload()`).
+
+### 원칙 변경과 보호 장치
+- 4.9a의 "숫자만" → "가입자 목록만 이메일·이름·가입일까지". 개인정보 처리방침에 운영자 열람을 적었다.
+- `Cache-Control: no-store`: 브라우저 뒤로 가기 캐시·프록시에 이메일 목록이 남지 않게.
+- `X-Robots-Tag: noindex, nofollow`: 검색 노출 금지 (어차피 관리자만 열 수 있지만 이중 장치).
+- 화면에 "이메일이 보여요. 캡처해서 공유하지 마세요." 안내.
+- 접근 규칙은 그대로: 관리자 이메일 + email_verified가 아니면 404.
+
+### 핵심 코드
+```
+AdminController ── isAdmin? 아니면 404
+     │ no-store / noindex 헤더
+     ├─ stats(now)    기존 숫자들
+     └─ details(now)  새로 추가
+          members      : select new Member(id, email, displayName, createdAt)   ← JPQL 생성자 표현식, 필요한 칸만
+          topPostcodes : group by postcode, count(distinct owner)  limit 10
+          industries   : group by industry → Industry.label()(한국어)
+          recordsByDay : work_day.createdAt 최근 7일 → 날짜별 개수(빈 날 0)
+```
+- `select new ...Member(...)`: 엔티티 전체가 아니라 보여줄 4칸만 꺼낸다. 실수로 다른 개인정보를 화면에 넘길 일이 줄어든다.
+
+### 테스트
+- `AdminControllerTest`: 비로그인 → 로그인 화면, 일반 사용자 → 404(목록이 새지 않음), 관리자 → 이메일·이름·지역 Top 10·안내 문구 표시, `Cache-Control: no-store`.
+- 샘플 3명으로 화면을 렌더링해 스크린샷 확인.
